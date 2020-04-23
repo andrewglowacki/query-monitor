@@ -287,6 +287,9 @@ export default {
         });
 
         ctrl.$parent.$on('generalStatusChanged', function(status) {
+            ctrl.$emit('generalStatusChanged', status);
+        });
+        ctrl.$on('generalStatusChanged', function(status) {
             ctrl.status = status;
             ctrl.formatData();
         });

@@ -9,6 +9,7 @@ import '@fortawesome/fontawesome-free/css/all.css'
 import Dashboard from './components/Dashboard.vue'
 import Runners from './components/Runners.vue'
 import Executors from './components/Executors.vue'
+import Scans from './components/Scans.vue'
 
 Vue.use(BootstrapVue);
 Vue.use(VueRouter);
@@ -16,7 +17,8 @@ Vue.use(VueRouter);
 const routes = [
     { path: '/', component: Dashboard },
     { path: '/runners', component: Runners },
-    { path: '/executors', component: Executors }
+    { path: '/executors', component: Executors },
+    { path: '/scans', component: Scans }
 ];
 
 const router = new VueRouter({

@@ -14,6 +14,11 @@
                             <i class="fa fa-list"></i> Executors
                         </a>
                     </li>
+                    <li class="nav-item" :class="{ 'active': currentPath == '/scans' }">
+                        <a class="nav-link" href="#/scans">
+                            <i class="fa fa-cloud"></i> Scans
+                        </a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="optionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             <i class="fa fa-cog"></i> Options

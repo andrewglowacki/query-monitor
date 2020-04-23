@@ -2,7 +2,7 @@ package sos.accumulo.monitor.data;
 
 public class AccumuloScanInfo {
     private String server;
-    private String range;
+    private int ranges;
     private String table;
 
     public String getServer() {
@@ -13,12 +13,12 @@ public class AccumuloScanInfo {
         this.server = server;
     }
 
-    public String getRange() {
-        return range;
+    public int getRanges() {
+        return ranges;
     }
 
-    public void setRange(String range) {
-        this.range = range;
+    public void setRanges(int ranges) {
+        this.ranges = ranges;
     }
 
     public String getTable() {
