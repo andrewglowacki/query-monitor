@@ -4,16 +4,15 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
-                    <h3>{{getRowCount(targetGrid)}} Runners/Executors</h3>
+                    <h3>{{targetGrid.rows.length}} Runners/Executors</h3>
                 </div>
                 <div class="card-body">
-                    <ag-grid-vue id="targetGrid" style="width: 100%; height: 200px"
-                                class="ag-theme-balham"
-                                :columnDefs="targetGrid.columns"
-                                :rowData="targetGrid.rows"
-                                :gridOptions="targetGrid.gridOptions"
-                                :defaultColDef="columnDefaults">
-                    </ag-grid-vue>
+                    <GridBase :columns="targetGrid.columns"
+                        :rows="targetGrid.rows"
+                        :gridOptions="targetGrid.gridOptions"
+                        size="full"
+                        updateKey="name">
+                    </GridBase>
                 </div>
             </div>
         </div>
@@ -32,13 +31,11 @@
                     </h3>
                 </div>
                 <div class="card-body">
-                    <ag-grid-vue id="scanGrid" style="width: 100%; height: 200px"
-                                class="ag-theme-balham"
-                                :columnDefs="scanGrid.columns"
-                                :rowData="scanGrid.rows"
-                                :gridOptions="scanGrid.gridOptions"
-                                :defaultColDef="columnDefaults">
-                    </ag-grid-vue>
+                    <GridBase :columns="scanGrid.columns"
+                        :rows="scanGrid.rows"
+                        :gridOptions="scanGrid.gridOptions"
+                        size="full">
+                    </GridBase>
                 </div>
             </div>
         </div>
@@ -46,10 +43,8 @@
 </template>
 
 <script>
-import { AgGridVue } from 'ag-grid-vue';
 import axios from 'axios';
-import "ag-grid-community/dist/styles/ag-grid.css";
-import "ag-grid-community/dist/styles/ag-theme-balham.css";
+import GridBase from './GridBase.vue';
 
 export default {
     data() {
@@ -61,56 +56,32 @@ export default {
             },
             loading: 0,
             loadingTokens: [],
-            columnDefaults: {
-                sortable: true,
-                editable: false,
-                resizable: true,
-                filter: true,
-                filterParams: {
-                    applyButton: true,
-                    resetButton: true
-                }
-            },
             targetGrid: {
                 gridOptions: {
                     onRowClicked: ctrl.targetClicked,
                     rowSelection: 'multiple'
                 },
-                columns: [{
-                    headerName: 'Name',
-                    field: 'name'
-                }, {
-                    headerName: 'Type',
-                    field: 'type'
-                }, {
-                    headerName: 'Running',
-                    field: 'running',
-                    filter: 'agNumberColumnFilter'
-                }],
+                columns: [
+                    { label: 'Name' }, 
+                    { label: 'Type' }, 
+                    { label: 'Running', type: 'count' }
+                ],
                 rows: []
             },
             scanGrid: {
                 gridOptions: { },
-                columns: [{
-                    headerName: 'Runner/Executor',
-                    field: 'target',
-                }, {
-                    headerName: 'TServer',
-                    field: 'server',
-                }, {
-                    headerName: 'Ranges',
-                    field: 'ranges',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Table',
-                    field: 'table',
-                }],
+                columns: [
+                    { label: 'Runner/Executor', field: 'target' }, 
+                    { label: 'TServer',         field: 'server' }, 
+                    { label: 'Ranges',          field: 'ranges',    type: 'count' }, 
+                    { label: 'Table',           field: 'table' }
+                ],
                 rows: []
             }
         }
     },
     components: {
-        AgGridVue
+        GridBase
     },
     methods: {
         targetClicked() {
@@ -223,69 +194,10 @@ export default {
                     running: this.status.executors[name].running
                 });
             }
-            this.updateGrid(this.targetGrid, rows, 'name');
-        },
-        updateGrid(grid, newRows, key) {
-            let newMap = {};
-            for (let i = 0; i < newRows.length; i++) {
-                newMap[newRows[i][key]] = newRows[i];
-            }
-
-            let oldMap = {};
-            grid.gridOptions.api.forEachNode((node) => {
-                oldMap[node.data[key]] = node.data;
-            });
-
-            let add = [];
-            let remove = [];
-            let update = {};
-
-            for (let key in newMap) {
-                if (key in oldMap) {
-                    update[key] = newMap[key];
-                } else {
-                    add.push(newMap[key]);
-                }
-            }
-
-            for (let key in oldMap) {
-                if (key in newMap) {
-                    continue;
-                }
-                remove.push(oldMap[key]);
-            }
-
-            if (add.length > 0 || remove.length > 0) {
-                grid.gridOptions.api.updateRowData({
-                    add: add,
-                    remove: remove
-                });
-            }
-
-            if (Object.keys(update).length > 0) {
-                grid.gridOptions.api.forEachNode((node) => {
-                    let row = update[node.data[key]];
-                    if (typeof row !== 'undefined') {
-                        node.setData(row);
-                    }
-                });
-            }
-        },
-        getRowCount(grid) {
-            if (typeof grid.gridOptions.api === 'undefined' || grid.gridOptions.api == null) {
-                return 0;
-            }
-            return grid.gridOptions.api.getModel().getTopLevelRowCount();
+            this.targetGrid.rows = rows;
         },
         isTest() {
             return typeof this.$route.query.test !== 'undefined';
-        },
-        handleResize() {
-            let targetGrid = document.getElementById("targetGrid");
-            let windowHeight = window.innerHeight;
-            let top = targetGrid.offsetTop;
-            targetGrid.style.height = (windowHeight - (top + 120)) + "px";
-            document.getElementById("scanGrid").style.height = targetGrid.style.height;
         }
     },
     mounted() {
@@ -299,11 +211,6 @@ export default {
             ctrl.formatData();
         });
         ctrl.$parent.$emit('getStatus');
-
-        window.addEventListener("resize", ctrl.handleResize);
-        ctrl.handleResize();
-        ctrl.targetGrid.gridOptions.api.sizeColumnsToFit();
-        ctrl.scanGrid.gridOptions.api.sizeColumnsToFit();
     }
 }
 </script>

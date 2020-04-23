@@ -4,16 +4,15 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <h3>{{getRowCount(runnerGrid)}} Query Runners</h3>
+                    <h3>{{runnerGrid.rows.length}} Query Runners</h3>
                 </div>
                 <div class="card-body">
-                    <ag-grid-vue id="runnerGrid" style="width: 100%; height: 200px"
-                                class="ag-theme-balham"
-                                :columnDefs="runnerGrid.columns"
-                                :rowData="runnerGrid.rows"
-                                :gridOptions="runnerGrid.gridOptions"
-                                :defaultColDef="columnDefaults">
-                    </ag-grid-vue>
+                    <GridBase :columns="runnerGrid.columns"
+                        :rows="runnerGrid.rows"
+                        :gridOptions="runnerGrid.gridOptions"
+                        :durationDates="options.durationDates"
+                        updateKey="name">
+                    </GridBase>
                 </div>
             </div>
         </div>
@@ -24,13 +23,11 @@
                     <h3 v-if="selected.name == '' || errorsGrid.rows.length == 0">No Errors</h3>
                 </div>
                 <div class="card-body">
-                    <ag-grid-vue id="errorsGrid" style="width: 100%; height: 200px"
-                                class="ag-theme-balham"
-                                :columnDefs="errorsGrid.columns"
-                                :rowData="errorsGrid.rows"
-                                :gridOptions="errorsGrid.gridOptions"
-                                :defaultColDef="columnDefaults">
-                    </ag-grid-vue>
+                    <GridBase :columns="errorsGrid.columns"
+                        :rows="errorsGrid.rows"
+                        :gridOptions="errorsGrid.gridOptions"
+                        :durationDates="options.durationDates">
+                    </GridBase>
                 </div>
             </div>
         </div>
@@ -45,7 +42,7 @@
                             Queries: No runner selected
                         </span>
                         <span v-if="selected.name != ''">
-                            <span>{{getRowCount(queryGrid)}}</span>
+                            <span>{{queryGrid.rows.length}}</span>
                             Queries: {{selected.name}}
                             <span v-if="loading.queries"> - <i class="fa fa-spinner fa-spin"></i> Loading...</span>
                         </span>
@@ -62,13 +59,12 @@
                     </h3>
                 </div>
                 <div class="card-body">
-                    <ag-grid-vue id="queryGrid" style="width: 100%; height: 200px"
-                                class="ag-theme-balham"
-                                :columnDefs="queryGrid.columns"
-                                :rowData="queryGrid.rows"
-                                :gridOptions="queryGrid.gridOptions"
-                                :defaultColDef="columnDefaults">
-                    </ag-grid-vue>
+                    <GridBase :columns="queryGrid.columns"
+                        :rows="queryGrid.rows"
+                        :gridOptions="queryGrid.gridOptions"
+                        :durationDates="options.durationDates"
+                        updateKey="index">
+                    </GridBase>
                 </div>
             </div>
         </div>
@@ -83,20 +79,19 @@
                             Shards: No query selected
                         </span>
                         <span v-if="selected.query >= 0">
-                            <span>{{getRowCount(shardsGrid)}}</span>
+                            <span>{{shardsGrid.rows.length}}</span>
                             Shards: Idx# {{selected.query}}
                             <span v-if="loading.shards"> - <i class="fa fa-spinner fa-spin"></i> Loading...</span>
                         </span>
                     </h3>
                 </div>
                 <div class="card-body">
-                    <ag-grid-vue id="shardsGrid" style="width: 100%; height: 200px"
-                                class="ag-theme-balham"
-                                :columnDefs="shardsGrid.columns"
-                                :rowData="shardsGrid.rows"
-                                :gridOptions="shardsGrid.gridOptions"
-                                :defaultColDef="columnDefaults">
-                    </ag-grid-vue>
+                    <GridBase :columns="shardsGrid.columns"
+                        :rows="shardsGrid.rows"
+                        :gridOptions="shardsGrid.gridOptions"
+                        :durationDates="options.durationDates"
+                        updateKey="shard">
+                    </GridBase>
                 </div>
             </div>
         </div>
@@ -118,13 +113,11 @@
                     </h3>
                 </div>
                 <div class="card-body">
-                    <ag-grid-vue id="attemptsGrid" style="width: 100%; height: 200px"
-                                class="ag-theme-balham"
-                                :columnDefs="attemptsGrid.columns"
-                                :rowData="attemptsGrid.rows"
-                                :gridOptions="attemptsGrid.gridOptions"
-                                :defaultColDef="columnDefaults">
-                    </ag-grid-vue>
+                    <GridBase :columns="attemptsGrid.columns"
+                        :rows="attemptsGrid.rows"
+                        :gridOptions="attemptsGrid.gridOptions"
+                        :durationDates="options.durationDates">
+                    </GridBase>
                 </div>
             </div>
         </div>
@@ -209,12 +202,10 @@
 </template>
 
 <script>
-import { AgGridVue } from 'ag-grid-vue';
 import axios from 'axios';
-import "ag-grid-community/dist/styles/ag-grid.css";
-import "ag-grid-community/dist/styles/ag-theme-balham.css";
 import moment from 'moment';
-import QueryParts from './QueryParts.vue';
+import GridBase from '../GridBase.vue';
+import QueryParts from '../queryparts/QueryParts.vue';
 
 export default {
     data() {
@@ -244,71 +235,25 @@ export default {
                 shards: false,
                 detail: false
             },
-            columnDefaults: {
-                sortable: true,
-                editable: false,
-                resizable: true,
-                filter: true,
-                filterParams: {
-                    applyButton: true,
-                    resetButton: true
-                }
-            },
             runnerGrid: {
                 gridOptions: {
                     onRowClicked: ctrl.runnerClicked,
                     rowSelection: 'single'
                 },
-                columns: [{
-                    headerName: 'Name',
-                    field: 'name'
-                }, {
-                    headerName: 'Running',
-                    field: 'running',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Finished',
-                    field: 'finished',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Threads',
-                    field: 'threads',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Errors',
-                    field: 'errors',
-                    filter: 'agNumberColumnFilter'
-                }, 
-                    ctrl.dateColumn('Last Error', 'mostRecentError'),
-                {
-                    headerName: 'Mem Free',
-                    field: 'memoryFree',
-                    filter: 'agNumberColumnFilter',
-                    valueFormatter: ctrl.formatMem
-                }, {
-                    headerName: 'Mem Used',
-                    field: 'memoryUsed',
-                    filter: 'agNumberColumnFilter',
-                    valueFormatter: ctrl.formatMem
-                }, {
-                    headerName: 'Mem Max',
-                    field: 'memoryMax',
-                    filter: 'agNumberColumnFilter',
-                    valueFormatter: ctrl.formatMem
-                }, 
-                    ctrl.dateColumn('Last Heard', 'lastHeard'),
-                {
-                    headerName: 'GC Time',
-                    field: 'gcTime',
-                    filter: 'agNumberColumnFilter',
-                    valueFormatter: ctrl.durationValueFormatter,
-                    tooltipValueGetter: ctrl.durationTooltip
-                }, {
-                    headerName: 'GC Count',
-                    field: 'gcCount',
-                    filter: 'agNumberColumnFilter'
-                }, 
-                    ctrl.dateColumn('Up Since', 'upSince')
+                columns: [
+                    { label: 'Name' },
+                    { label: 'Running',     type: 'count' },
+                    { label: 'Finished',    type: 'count' },
+                    { label: 'Threads',     type: 'count' },
+                    { label: 'Errors',      type: 'count' },
+                    { label: 'Last Error',  type: 'date',       field: 'mostRecentError' },
+                    { label: 'Mem Free',    type: 'mem',        field: 'memoryFree' },
+                    { label: 'Mem Used',    type: 'mem',        field: 'memoryUsed' },
+                    { label: 'Mem Max',     type: 'mem',        field: 'memoryMax' },
+                    { label: 'Last Heard',  type: 'date',       field: 'lastHeard' },
+                    { label: 'GC Time',     type: 'duration',   field: 'gcTime' },
+                    { label: 'GC Count',    type: 'count',      field: 'gcCount' },
+                    { label: 'Up Since',    type: 'date',       field: 'upSince' },
                 ],
                 rows: []
             },
@@ -317,80 +262,40 @@ export default {
                     onRowClicked: ctrl.queryClicked,
                     rowSelection: 'single'
                 },
-                columns: [{
-                    headerName: 'Idx#',
-                    field: 'index',
-                    filter: 'agNumberColumnFilter'
-                }, 
-                    ctrl.dateColumn('Started'), 
-                    ctrl.dateColumn('Finished'), 
-                {
-                    headerName: 'Query Type',
-                    field: 'queryType',
-                }, {
-                    headerName: 'Results Type',
-                    field: 'resultsType',
-                }, {
-                    headerName: 'Query String',
-                    field: 'queryString',
-                }, {
-                    headerName: '# BlobIds ',
-                    field: 'numBlobIds',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Sh-Tot',
-                    field: 'shardsTotal',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Sh-Comp',
-                    field: 'shardsComplete',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Origin Thread',
-                    field: 'originThreadName'
-                }, {
-                    headerName: '# Results',
-                    field: 'results',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Result Size',
-                    field: 'resultSize',
-                    filter: 'agNumberColumnFilter',
-                    valueFormatter: ctrl.formatMem
-                }, {
-                    headerName: 'Error',
-                    field: 'error'
-                }],
+                columns: [
+                    { label: 'Idx#',            field: 'index',             type: 'count' },
+                    { label: 'Started',                                     type: 'date' },
+                    { label: 'Finished',                                    type: 'date' },
+                    { label: 'Query Type',      field: 'queryType' },
+                    { label: 'Results Type',    field: 'resultsType' },
+                    { label: 'Query String',    field: 'queryString' },
+                    { label: '# BlobIds ',      field: 'numBlobIds',        type: 'count' },
+                    { label: 'Sh-Tot',          field: 'shardsTotal',       type: 'count' },
+                    { label: 'Sh-Comp',         field: 'shardsComplete',    type: 'count' },
+                    { label: 'Origin Thread',   field: 'originThreadName'},
+                    { label: '# Results',       field: 'results',           type: 'count' },
+                    { label: 'Result Size',     field: 'resultSize',        type: 'mem' },
+                    { label: 'Error' }
+                ],
                 rows: []
             },
             errorsGrid: {
                 columns: [
-                    ctrl.dateColumn('Time'),
-                {
-                    headerName: 'Error',
-                    field: 'error'
-                }],
+                    { label: 'Time', type: 'date' },
+                    { label: 'Error' }
+                ],
                 gridOptions: {},
                 rows: []
             },
             shardsGrid: {
-                columns: [{
-                    headerName: 'Shard',
-                    field: 'shard'
-                }, {
-                    headerName: 'Failures',
-                    field: 'failures',
-                    filter: 'agNumberColumnFilter'
-                }, 
-                    ctrl.dateColumn('Started'),
-                    ctrl.dateColumn('Finished'),
-                {
-                    headerName: 'Server',
-                    field: 'server'
-                }, {
-                    headerName: 'Errored',
-                    field: 'errored'
-                }],
+                columns: [
+                    { label: 'Shard' },
+                    { label: 'Failures',    type: 'count' },
+                    { label: 'Started',     type: 'date' },
+                    { label: 'Finished',    type: 'date' },
+                    { label: 'Server' },
+                    { label: 'Errored' }
+                ],
                 gridOptions: {
                     onRowClicked: ctrl.shardClicked,
                     rowSelection: 'single'
@@ -398,32 +303,17 @@ export default {
                 rows: []
             },
             attemptsGrid: {
-                columns: [{
-                    headerName: 'Server',
-                    field: 'server'
-                }, 
-                    ctrl.dateColumn('Started'),
-                {
-                    headerName: 'Index Results',
-                    field: 'indexResults',
-                    filter: 'agNumberColumnFilter'
-                },
-                    ctrl.dateColumn('Index Finished', 'indexFinished'),
-                {
-                    headerName: 'Data Results',
-                    field: 'dataResults',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Data Size',
-                    field: 'dataSize',
-                    filter: 'agNumberColumnFilter',
-                    valueFormatter: ctrl.formatMem
-                },
-                    ctrl.dateColumn('Finished'),
-                {
-                    headerName: 'Error',
-                    field: 'error'
-                }],
+                columns: [
+                    { label: 'Server' },
+                    { label: 'Started',         type: 'date' },
+                    { label: 'Finished',        type: 'date' },
+                    { label: 'Index Results',   type: 'count',  field: 'indexResults' },
+                    { label: 'Index Finished',  type: 'date',   field: 'indexFinished' },
+                    { label: 'Data Results',    type: 'count',  field: 'dataResults' },
+                    { label: 'Data Size',       type: 'mem',    field: 'dataSize' },
+                    { label: 'Data Results',    type: 'count',  field: 'dataResults' },
+                    { label: 'Error' },
+                ],
                 gridOptions: {
                     onRowClicked: ctrl.attemptClicked,
                     rowSelection: 'single'
@@ -433,7 +323,7 @@ export default {
         };
     },
     components: {
-        AgGridVue,
+        GridBase,
         QueryParts
     },
     computed: {
@@ -442,33 +332,6 @@ export default {
         }
     },
     methods: {
-        dateColumn(headerName, field) {
-            let ctrl = this;
-            if (typeof field === 'undefined') {
-                field = headerName.toLowerCase();
-            }
-            return {
-                headerName: headerName,
-                field: field,
-                filter: 'agDateColumnFilter',
-                comparator: ctrl.dateSortComparator,
-                valueFormatter: ctrl.dateValueFormatter,
-                tooltipValueGetter: ctrl.dateTooltipFormatter,
-                filterParams: {
-                    browserDatePicker: true,
-                    applyButton: true,
-                    resetButton: true,
-                    defaultOption: 'inRange',
-                    comparator: ctrl.dateFilterComparator
-                }
-            };
-        },
-        dateValueFormatter(params) {
-            return this.options.durationDates ? this.dateDurationFormatter(params) : this.dateTimeFormatter(params);
-        },
-        dateTooltipFormatter(params) {
-            return this.options.durationDates ? this.dateTimeFormatter(params) : this.dateDurationFormatter(params);
-        },
         createEmptyAttemptDetailInfo() {
             return {
                 index: '',
@@ -560,7 +423,7 @@ export default {
                 shard: ctrl.selected.shard,
                 started: moment(attempt.started).format("MM/DD/YYYY HH:mm:ss"),
                 finished: attempt.finished == 0 ? 'Not Finished' : moment(attempt.finished).format("MM/DD/YYYY HH:mm:ss"),
-                duration: ctrl.durationValueFormatter({ value: duration }),
+                duration: ctrl.durationValueFormatter(duration),
                 results: attempt.finished != 0 ? attempt.indexResults : num(10000),
                 startedQueueCount: num(20),
                 finishedQueueCount: num(20),
@@ -657,7 +520,7 @@ export default {
 
                 entry.info.started = moment(entry.info.started).format("MM/DD/YYYY HH:mm:ss"),
                 entry.info.finished = entry.info.finished == 0 ? 'Not Finished' : moment(entry.info.finished).format("MM/DD/YYYY HH:mm:ss"),
-                entry.info.duration = ctrl.durationValueFormatter({ value: duration }),
+                entry.info.duration = ctrl.durationValueFormatter(duration),
                 ctrl.attemptDetailInfo = entry.info;
                 ctrl.attemptDetailParts = entry.queryParts;
             }).catch((response) => {
@@ -700,6 +563,15 @@ export default {
                 return;
             }
             this.errorsGrid.rows = runner.recentErrors.concat([]);
+        },
+        durationValueFormatter(value) {
+            if (value < 5000) {
+                return '' + value + ' ms';
+            } else if (value < 120000) {
+                return '' + Math.round(value / 1000) + ' seconds';
+            } else {
+                return moment.duration(value).humanize();
+            }
         },
         loadTestQueries() {
             let ctrl = this;
@@ -765,7 +637,7 @@ export default {
                     error: error
                 });
             }
-            ctrl.updateGrid(ctrl.queryGrid, queries, 'index');
+            ctrl.queryGrid.rows = queries;
             ctrl.loadShards();
         },
         loadQueries() {
@@ -800,7 +672,7 @@ export default {
                 cancelToken: token.token
             }).then((response) => {
                 ctrl.loading.queries = false;
-                ctrl.updateGrid(ctrl.queryGrid, response.data, 'index');
+                ctrl.queryGrid.rows = response.data;
                 ctrl.loadShards();
             }).catch((response) => {
                 ctrl.loading.queries = false;
@@ -825,12 +697,6 @@ export default {
             } else {
                 ctrl.error = JSON.stringify(response);
             }
-        },
-        getRowCount(grid) {
-            if (typeof grid.gridOptions.api === 'undefined' || grid.gridOptions.api == null) {
-                return 0;
-            }
-            return grid.gridOptions.api.getModel().getTopLevelRowCount();
         },
         getSelectedQuery() {
             let ctrl = this;
@@ -999,7 +865,7 @@ export default {
                 });
             }
             ctrl.shardMap = shardMap;
-            ctrl.updateGrid(ctrl.shardsGrid, shardRows, 'shard');
+            ctrl.shardsGrid.rows = shardRows;
             if (ctrl.shardsGrid.gridOptions.api != null) {
                 ctrl.shardsGrid.gridOptions.api.sizeColumnsToFit();
             } else {
@@ -1026,130 +892,8 @@ export default {
                 query: params
             });
         },
-        dateSortComparator(timeOne, timeTwo) {
-            if (timeOne == timeTwo) {
-                return 0;
-            } else if (timeOne != 0 && timeTwo != 0) {
-                if (timeOne < timeTwo) {
-                    return -1;
-                } else {
-                    return 1;
-                }
-            } else if (timeOne != 0) {
-                return 1;
-            } else {
-                return -1;
-            }
-        },
-        dateFilterComparator(filterLocalDateAtMidnight, cellEpoch) {
-            let filterEpoch = filterLocalDateAtMidnight.getTime();
-            if (cellEpoch < filterEpoch) {
-                return -1;
-            } else if (cellEpoch > filterEpoch) {
-                return 1;
-            } else {
-                return 0;
-            }
-        },
-        dateTimeFormatter(params) {
-            if (params.value == 0) {
-                return 'Never';
-            } else {
-                return moment(params.value).format("MM/DD/YYYY HH:mm:ss");
-            }
-        },
-        dateDurationFormatter(params) {
-            let value = params.value;
-            if (value == 0) {
-                return 'Never';
-            } else {
-                let ago = moment(value).fromNow();
-                if (ago == 'a few seconds ago') {
-                    return '' + Math.round((new Date().getTime() - value) / 1000) + ' seconds ago';
-                } else {
-                    return ago;
-                }
-            }
-        },
-        durationValueFormatter(params) {
-            let value = params.value;
-            if (value < 5000) {
-                return '' + value + ' ms';
-            } else if (value < 120000) {
-                return '' + Math.round(value / 1000) + ' seconds';
-            } else {
-                return moment.duration(value).humanize();
-            }
-        },
-        durationTooltip(params) {
-            let value = params.value;
-            if (value < 1000) {
-                return '' + value + ' ms';
-            } else {
-                return '' + (Math.round(value / 10) / 100) + ' seconds';
-            }
-        },
-        formatMem(params) {
-            let value = params.value;
-            const labels = ['B', 'KB', 'MB', 'GB'];
-            let labelIndex = 0;
-            while (value > 1024.0) {
-                value = value / 1024.0;
-                labelIndex++;
-            }
-            if (labelIndex > 0) {
-                value = Math.round(value * 100) / 100;
-            }
-            return "" + value + " " + labels[labelIndex];
-        },
         isTest() {
             return typeof this.$route.query.test !== 'undefined';
-        },
-        updateGrid(grid, newRows, key) {
-            let newMap = {};
-            for (let i = 0; i < newRows.length; i++) {
-                newMap[newRows[i][key]] = newRows[i];
-            }
-
-            let oldMap = {};
-            grid.gridOptions.api.forEachNode((node) => {
-                oldMap[node.data[key]] = node.data;
-            });
-
-            let add = [];
-            let remove = [];
-            let update = {};
-
-            for (let key in newMap) {
-                if (key in oldMap) {
-                    update[key] = newMap[key];
-                } else {
-                    add.push(newMap[key]);
-                }
-            }
-
-            for (let key in oldMap) {
-                if (key in newMap) {
-                    continue;
-                }
-                remove.push(oldMap[key]);
-            }
-
-            if (add.length > 0 || remove.length > 0) {
-                grid.gridOptions.api.updateRowData({
-                    add: add,
-                    remove: remove
-                });
-            }
-
-            if (Object.keys(update).length > 0) {
-                grid.gridOptions.api.forEachNode((node) => {
-                    let row = update[node.data[key]];
-                    if (typeof row !== 'undefined') {
-                        node.setData(row);
-                    }
-                });
-            }
         },
         formatRunners() {
             let ctrl = this;
@@ -1174,19 +918,8 @@ export default {
                 });
             }
 
-            ctrl.updateGrid(ctrl.runnerGrid, runnerRows, 'name');
+            ctrl.runnerGrid.rows = runnerRows;
             ctrl.populateErrors();
-        },
-        handleResize() {
-            let runnerGrid = document.getElementById("runnerGrid");
-            let windowHeight = window.innerHeight;
-            let top = runnerGrid.offsetTop
-            let amount = Math.round((windowHeight - (top + 220)) / 2);
-            runnerGrid.style.height = amount + "px";
-            document.getElementById("queryGrid").style.height = runnerGrid.style.height;
-            document.getElementById("errorsGrid").style.height = runnerGrid.style.height;
-            document.getElementById("shardsGrid").style.height = runnerGrid.style.height;
-            document.getElementById("attemptsGrid").style.height = runnerGrid.style.height;
         }
     },
     mounted() {
@@ -1220,13 +953,8 @@ export default {
         });
         ctrl.$parent.$emit('getStatus');
 
-        window.addEventListener("resize", ctrl.handleResize);
-        ctrl.handleResize();
         ctrl.runnerGrid.gridOptions.api.sizeColumnsToFit();
         ctrl.queryGrid.gridOptions.api.sizeColumnsToFit();
-    },
-    unmounted() {
-        window.removeEventListener("resize", this.handleResize);
     }
 }
 </script>

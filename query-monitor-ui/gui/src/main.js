@@ -7,8 +7,8 @@ import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
 import '@fortawesome/fontawesome-free/css/all.css'
 import Dashboard from './components/Dashboard.vue'
-import Runners from './components/Runners.vue'
-import Executors from './components/Executors.vue'
+import Runners from './components/runners/Runners.vue'
+import Executors from './components/executors/Executors.vue'
 import Scans from './components/Scans.vue'
 
 Vue.use(BootstrapVue);

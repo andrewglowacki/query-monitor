@@ -3,16 +3,15 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <h3>{{getRowCount(executorGrid)}} Executors</h3>
+                    <h3>{{executorGrid.rows.length}} Executors</h3>
                 </div>
                 <div class="card-body">
-                    <ag-grid-vue id="executorGrid" style="width: 100%; height: 200px"
-                                class="ag-theme-balham"
-                                :columnDefs="executorGrid.columns"
-                                :rowData="executorGrid.rows"
-                                :gridOptions="executorGrid.gridOptions"
-                                :defaultColDef="columnDefaults">
-                    </ag-grid-vue>
+                    <GridBase :columns="executorGrid.columns"
+                        :rows="executorGrid.rows"
+                        :gridOptions="executorGrid.gridOptions"
+                        :durationDates="options.durationDates"
+                        updateKey="name">
+                    </GridBase>
                 </div>
             </div>
         </div>
@@ -26,13 +25,11 @@
                     </h3>
                 </div>
                 <div class="card-body">
-                    <ag-grid-vue id="errorsGrid" style="width: 100%; height: 200px"
-                                class="ag-theme-balham"
-                                :columnDefs="errorsGrid.columns"
-                                :rowData="errorsGrid.rows"
-                                :gridOptions="errorsGrid.gridOptions"
-                                :defaultColDef="columnDefaults">
-                    </ag-grid-vue>
+                    <GridBase :columns="errorsGrid.columns"
+                        :rows="errorsGrid.rows"
+                        :gridOptions="errorsGrid.gridOptions"
+                        :durationDates="options.durationDates">
+                    </GridBase>
                 </div>
             </div>
         </div>
@@ -61,7 +58,7 @@
                         <button class="btn btn-info btn-sm btn-refresh" title="Refresh for the selected query executor" @click="loadShards()">
                             <i class="fa fa-redo"></i>
                         </button>
-                        {{getRowCount(shardsGrid)}} Shards: 
+                        {{shardsGrid.rows.length}} Shards: 
                         <span v-if="selected.name == ''">
                             No executor selected
                         </span>
@@ -83,13 +80,12 @@
                     </h3>
                 </div>
                 <div class="card-body">
-                    <ag-grid-vue id="shardsGrid" style="width: 100%; height: 200px"
-                                class="ag-theme-balham"
-                                :columnDefs="shardsGrid.columns"
-                                :rowData="shardsGrid.rows"
-                                :gridOptions="shardsGrid.gridOptions"
-                                :defaultColDef="columnDefaults">
-                    </ag-grid-vue>
+                    <GridBase :columns="shardsGrid.columns"
+                        :rows="shardsGrid.rows"
+                        :gridOptions="shardsGrid.gridOptions"
+                        :durationDates="options.durationDates"
+                        updateKey="index">
+                    </GridBase>
                 </div>
             </div>
         </div>
@@ -182,13 +178,11 @@
 </template>
 
 <script>
-import { AgGridVue } from 'ag-grid-vue';
 import axios from 'axios';
-import "ag-grid-community/dist/styles/ag-grid.css";
-import "ag-grid-community/dist/styles/ag-theme-balham.css";
 import moment from 'moment';
 import Chart from 'chart.js';
-import QueryParts from './QueryParts.vue';
+import GridBase from '../GridBase.vue';
+import QueryParts from '../queryparts/QueryParts.vue';
 
 export default {
     data() {
@@ -228,81 +222,33 @@ export default {
                 shards: false,
                 parts: false
             },
-            columnDefaults: {
-                sortable: true,
-                editable: false,
-                resizable: true,
-                filter: true,
-                filterParams: {
-                    applyButton: true,
-                    resetButton: true
-                }
-            },
             executorGrid: {
                 gridOptions: {
                     onRowClicked: ctrl.executorClicked,
                     rowSelection: 'single'
                 },
-                columns: [{
-                    headerName: 'Name',
-                    field: 'name'
-                }, {
-                    headerName: 'Running',
-                    field: 'running',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Finished',
-                    field: 'finished',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Threads',
-                    field: 'threads',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Errors',
-                    field: 'errors',
-                    filter: 'agNumberColumnFilter'
-                }, 
-                    ctrl.dateColumn('Last Error', 'mostRecentError'),
-                {
-                    headerName: 'Mem Free',
-                    field: 'memoryFree',
-                    filter: 'agNumberColumnFilter',
-                    valueFormatter: ctrl.formatMem
-                }, {
-                    headerName: 'Mem Used',
-                    field: 'memoryUsed',
-                    filter: 'agNumberColumnFilter',
-                    valueFormatter: ctrl.formatMem
-                }, {
-                    headerName: 'Mem Max',
-                    field: 'memoryMax',
-                    filter: 'agNumberColumnFilter',
-                    valueFormatter: ctrl.formatMem
-                }, 
-                    ctrl.dateColumn('Last Heard', 'lastHeard'),
-                {
-                    headerName: 'GC Time',
-                    field: 'gcTime',
-                    filter: 'agNumberColumnFilter',
-                    valueFormatter: ctrl.durationValueFormatter,
-                    tooltipValueGetter: ctrl.durationTooltip
-                }, {
-                    headerName: 'GC Count',
-                    field: 'gcCount',
-                    filter: 'agNumberColumnFilter'
-                }, 
-                    ctrl.dateColumn('Up Since', 'upSince')
+                columns: [
+                    { label: 'Name' }, 
+                    { label: 'Running',     type: 'count' }, 
+                    { label: 'Finished',    type: 'count' }, 
+                    { label: 'Threads',     type: 'count' }, 
+                    { label: 'Errors',      type: 'count' }, 
+                    { label: 'Last Error',  type: 'date',       field: 'mostRecentError' },
+                    { label: 'Mem Free',    type: 'mem',        field: 'memoryFree' }, 
+                    { label: 'Mem Used',    type: 'mem',        field: 'memoryUsed' },
+                    { label: 'Mem Max',     type: 'mem',        field: 'memoryMax' },
+                    { label: 'Last Heard',  type: 'date',       field: 'lastHeard' },
+                    { label: 'GC Time',     type: 'duration',   field: 'gcTime' }, 
+                    { label: 'GC Count',    type: 'count',      field: 'gcCount' }, 
+                    { label: 'Up Since',    type: 'date',       field: 'upSince' }
                 ],
                 rows: []
             },
             errorsGrid: {
                 columns: [
-                    ctrl.dateColumn('Time'),
-                {
-                    headerName: 'Error',
-                    field: 'error'
-                }],
+                    { label: 'Time', type: 'date'},
+                    { label: 'Error' }
+                ],
                 gridOptions: {},
                 rows: []
             },
@@ -311,68 +257,27 @@ export default {
                     onRowClicked: ctrl.shardClicked,
                     rowSelection: 'single'
                 },
-                columns: [{
-                    headerName: 'Idx',
-                    field: 'index',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Shard',
-                    field: 'shard'
-                },
-                    ctrl.dateColumn('Started'),
-                    ctrl.dateColumn('Finished'), 
-                {
-                    headerName: 'Source',
-                    field: 'sourceServer'
-                }, {
-                    headerName: 'Results',
-                    field: 'results',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Queue Start',
-                    field: 'startedQueueCount',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Queue End',
-                    field: 'finishedQueueCount',
-                    filter: 'agNumberColumnFilter'
-                }, {
-                    headerName: 'Query',
-                    field: 'queryString'
-                }, {
-                    headerName: 'Error',
-                    field: 'error'
-                }],
+                columns: [
+                    { label: 'Idx',         field: 'index',                 type: 'count' },
+                    { label: 'Shard' },
+                    { label: 'Started',                                     type: 'date' },
+                    { label: 'Finished',                                    type: 'date' },
+                    { label: 'Source',      field: 'sourceServer' }, 
+                    { label: 'Results',     field: 'results',               type: 'count' }, 
+                    { label: 'Queue Start', field: 'startedQueueCount',     type: 'count' }, 
+                    { label: 'Queue End',   field: 'finishedQueueCount',    type: 'count' }, 
+                    { label: 'Query',       field: 'queryString' }, 
+                    { label: 'Error' }
+                ],
                 rows: []
             },
         };
     },
     components: {
-        AgGridVue,
+        GridBase,
         QueryParts
     },
     methods: {
-        dateColumn(headerName, field) {
-            let ctrl = this;
-            if (typeof field === 'undefined') {
-                field = headerName.toLowerCase();
-            }
-            return {
-                headerName: headerName,
-                field: field,
-                filter: 'agDateColumnFilter',
-                comparator: ctrl.dateSortComparator,
-                valueFormatter: ctrl.dateValueFormatter,
-                tooltipValueGetter: ctrl.dateTooltipFormatter,
-                filterParams: {
-                    browserDatePicker: true,
-                    applyButton: true,
-                    resetButton: true,
-                    defaultOption: 'inRange',
-                    comparator: ctrl.dateFilterComparator
-                }
-            };
-        },
         createEmptyExecutorDetail() {
             return {
                 recentErrors: [],
@@ -633,7 +538,7 @@ export default {
                     error: error
                 });
             }
-            ctrl.updateGrid(ctrl.shardsGrid, shards, 'index');
+            ctrl.shardsGrid.rows = shards;
             ctrl.shardsGrid.gridOptions.api.sizeColumnsToFit();
         },
         loadShards() {
@@ -666,7 +571,7 @@ export default {
                 cancelToken: token.token
             }).then((response) => {
                 ctrl.loading.shards = false;
-                ctrl.updateGrid(ctrl.shardsGrid, response.data, 'index');
+                ctrl.shardsGrid.rows = response.data;
             }).catch((response) => {
                 ctrl.loading.shards = false;
                 if (!axios.isCancel(response)) {
@@ -704,7 +609,7 @@ export default {
                 shard: shard.shard,
                 started: moment(shard.started).format("MM/DD/YYYY HH:mm:ss"),
                 finished: shard.finished == 0 ? 'Not Finished' : moment(shard.finished).format("MM/DD/YYYY HH:mm:ss"),
-                duration: ctrl.durationValueFormatter({ value: duration }),
+                duration: ctrl.durationValueFormatter(duration),
                 results: shard.results,
                 startedQueueCount: shard.startedQueueCount,
                 finishedQueueCount: shard.finishedQueueCount,
@@ -792,7 +697,7 @@ export default {
 
                 entry.info.started = moment(entry.info.started).format("MM/DD/YYYY HH:mm:ss"),
                 entry.info.finished = entry.info.finished == 0 ? 'Not Finished' : moment(entry.info.finished).format("MM/DD/YYYY HH:mm:ss"),
-                entry.info.duration = ctrl.durationValueFormatter({ value: duration }),
+                entry.info.duration = ctrl.durationValueFormatter(duration),
                 ctrl.attemptDetailInfo = entry.info;
                 ctrl.attemptDetailParts = entry.queryParts;
             }).catch((response) => {
@@ -818,12 +723,6 @@ export default {
                 ctrl.error = JSON.stringify(response);
             }
         },
-        getRowCount(grid) {
-            if (typeof grid.gridOptions.api === 'undefined' || grid.gridOptions.api == null) {
-                return 0;
-            }
-            return grid.gridOptions.api.getModel().getTopLevelRowCount();
-        },
         setRouteParams() {
             let ctrl = this;
             let params = {
@@ -840,136 +739,8 @@ export default {
                 query: params
             });
         },
-        dateSortComparator(timeOne, timeTwo) {
-            if (timeOne == timeTwo) {
-                return 0;
-            } else if (timeOne != 0 && timeTwo != 0) {
-                if (timeOne < timeTwo) {
-                    return -1;
-                } else {
-                    return 1;
-                }
-            } else if (timeOne != 0) {
-                return 1;
-            } else {
-                return -1;
-            }
-        },
-        dateFilterComparator(filterLocalDateAtMidnight, cellEpoch) {
-            let filterEpoch = filterLocalDateAtMidnight.getTime();
-            if (cellEpoch < filterEpoch) {
-                return -1;
-            } else if (cellEpoch > filterEpoch) {
-                return 1;
-            } else {
-                return 0;
-            }
-        },
-        dateValueFormatter(params) {
-            return this.options.durationDates ? this.dateDurationFormatter(params) : this.dateTimeFormatter(params);
-        },
-        dateTooltipFormatter(params) {
-            return this.options.durationDates ? this.dateTimeFormatter(params) : this.dateDurationFormatter(params);
-        },
-        dateTimeFormatter(params) {
-            if (params.value == 0) {
-                return 'Never';
-            } else {
-                return moment(params.value).format("MM/DD/YYYY HH:mm:ss");
-            }
-        },
-        dateDurationFormatter(params) {
-            let value = params.value;
-            if (value == 0) {
-                return 'Never';
-            } else {
-                let ago = moment(value).fromNow();
-                if (ago == 'a few seconds ago') {
-                    return '' + Math.round((new Date().getTime() - value) / 1000) + ' seconds ago';
-                } else {
-                    return ago;
-                }
-            }
-        },
-        durationValueFormatter(params) {
-            let value = params.value;
-            if (value < 5000) {
-                return '' + value + ' ms';
-            } else if (value < 120000) {
-                return '' + Math.round(value / 1000) + ' seconds';
-            } else {
-                return moment.duration(value).humanize();
-            }
-        },
-        durationTooltip(params) {
-            let value = params.value;
-            if (value < 1000) {
-                return '' + value + ' ms';
-            } else {
-                return '' + (Math.round(value / 10) / 100) + ' seconds';
-            }
-        },
-        formatMem(params) {
-            let value = params.value;
-            const labels = ['B', 'KB', 'MB', 'GB'];
-            let labelIndex = 0;
-            while (value > 1024.0) {
-                value = value / 1024.0;
-                labelIndex++;
-            }
-            if (labelIndex > 0) {
-                value = Math.round(value * 100) / 100;
-            }
-            return "" + value + " " + labels[labelIndex];
-        },
         isTest() {
             return typeof this.$route.query.test !== 'undefined';
-        },
-        updateGrid(grid, newRows, key) {
-            let newMap = {};
-            for (let i = 0; i < newRows.length; i++) {
-                newMap[newRows[i][key]] = newRows[i];
-            }
-
-            let oldMap = {};
-            grid.gridOptions.api.forEachNode((node) => {
-                oldMap[node.data[key]] = node.data;
-            });
-
-            let add = [];
-            let remove = [];
-            let update = {};
-
-            for (let key in newMap) {
-                if (key in oldMap) {
-                    update[key] = newMap[key];
-                } else {
-                    add.push(newMap[key]);
-                }
-            }
-
-            for (let key in oldMap) {
-                if (key in newMap) {
-                    continue;
-                }
-                remove.push(oldMap[key]);
-            }
-
-            if (add.length > 0 || remove.length > 0) {
-                grid.gridOptions.api.updateRowData({
-                    add: add,
-                    remove: remove
-                });
-            }
-
-            if (Object.keys(update).length > 0) {
-                grid.gridOptions.api.forEachNode((node) => {
-                    let row = update[node.data[key]];
-                    if (typeof row !== 'undefined') {
-                        node.setData(row);
-                    }
-                });
-            }
         },
         formatExecutors() {
             let ctrl = this;
@@ -994,20 +765,15 @@ export default {
                 });
             }
 
-            ctrl.updateGrid(ctrl.executorGrid, rows, 'name');
+            ctrl.executorGrid.rows = rows;
         },
-        handleResize() {
-            let executorGrid = document.getElementById("executorGrid");
-            let windowHeight = window.innerHeight;
-            let top = executorGrid.offsetTop
-            let amount = Math.round((windowHeight - (top + 230)) / 2);
-            executorGrid.style.height = amount + "px";
-            document.getElementById("errorsGrid").style.height = executorGrid.style.height;
-            document.getElementById("executorStats").style.height = executorGrid.style.height;
-            document.getElementById("shardsGrid").style.height = executorGrid.style.height;
-
-            if (this.executorDetailChart.chart != null) {
-                this.executorDetailChart.chart.update();
+        durationValueFormatter(value) {
+            if (value < 5000) {
+                return '' + value + ' ms';
+            } else if (value < 120000) {
+                return '' + Math.round(value / 1000) + ' seconds';
+            } else {
+                return moment.duration(value).humanize();
             }
         }
     },
@@ -1038,13 +804,7 @@ export default {
         ctrl.$parent.$emit('getStatus');
         ctrl.$parent.$emit('getOptions');
 
-        window.addEventListener("resize", ctrl.handleResize);
-        ctrl.handleResize();
-        ctrl.executorGrid.gridOptions.api.sizeColumnsToFit();
         ctrl.executorDetailChart.chart = new Chart(document.getElementById('executorStats'), ctrl.executorDetailChart.data);
-    },
-    unmounted() {
-        window.removeEventListener("resize", this.handleResize);
     }
 }
 </script>
