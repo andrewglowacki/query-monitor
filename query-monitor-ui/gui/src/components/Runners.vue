@@ -223,6 +223,7 @@ export default {
             status: {
                 queryRunners: {}
             },
+            options: {},
             shardMap: {},
             attemptDetailInfo: ctrl.createEmptyAttemptDetailInfo(),
             attemptDetailParts: [],
@@ -301,7 +302,7 @@ export default {
                     field: 'gcTime',
                     filter: 'agNumberColumnFilter',
                     valueFormatter: ctrl.durationValueFormatter,
-                    tooltip: ctrl.durationTooltip
+                    tooltipValueGetter: ctrl.durationTooltip
                 }, {
                     headerName: 'GC Count',
                     field: 'gcCount',
@@ -321,8 +322,8 @@ export default {
                     field: 'index',
                     filter: 'agNumberColumnFilter'
                 }, 
-                    ctrl.dateColumn('Started', true), 
-                    ctrl.dateColumn('Finished', true), 
+                    ctrl.dateColumn('Started'), 
+                    ctrl.dateColumn('Finished'), 
                 {
                     headerName: 'Query Type',
                     field: 'queryType',
@@ -364,7 +365,7 @@ export default {
             },
             errorsGrid: {
                 columns: [
-                    ctrl.dateColumn('Time', true),
+                    ctrl.dateColumn('Time'),
                 {
                     headerName: 'Error',
                     field: 'error'
@@ -441,22 +442,18 @@ export default {
         }
     },
     methods: {
-        dateColumn(headerName, field, reverse) {
+        dateColumn(headerName, field) {
             let ctrl = this;
-            if (typeof field === 'boolean') {
-                reverse = field;
-                field = headerName.toLowerCase();
-            } else if (typeof field === 'undefined') {
+            if (typeof field === 'undefined') {
                 field = headerName.toLowerCase();
             }
-            reverse = typeof reverse === 'undefined' ? false : reverse;
             return {
                 headerName: headerName,
                 field: field,
                 filter: 'agDateColumnFilter',
                 comparator: ctrl.dateSortComparator,
-                valueFormatter: reverse ? ctrl.dateTooltipFormatter : ctrl.dataValueFormatter,
-                tooltip: reverse ? ctrl.dataValueFormatter : ctrl.dateTooltipFormatter,
+                valueFormatter: ctrl.dateValueFormatter,
+                tooltipValueGetter: ctrl.dateTooltipFormatter,
                 filterParams: {
                     browserDatePicker: true,
                     applyButton: true,
@@ -465,6 +462,12 @@ export default {
                     comparator: ctrl.dateFilterComparator
                 }
             };
+        },
+        dateValueFormatter(params) {
+            return this.options.durationDates ? this.dateDurationFormatter(params) : this.dateTimeFormatter(params);
+        },
+        dateTooltipFormatter(params) {
+            return this.options.durationDates ? this.dateTimeFormatter(params) : this.dateDurationFormatter(params);
         },
         createEmptyAttemptDetailInfo() {
             return {
@@ -1048,14 +1051,14 @@ export default {
                 return 0;
             }
         },
-        dateTooltipFormatter(params) {
+        dateTimeFormatter(params) {
             if (params.value == 0) {
                 return 'Never';
             } else {
                 return moment(params.value).format("MM/DD/YYYY HH:mm:ss");
             }
         },
-        dataValueFormatter(params) {
+        dateDurationFormatter(params) {
             let value = params.value;
             if (value == 0) {
                 return 'Never';
@@ -1200,11 +1203,17 @@ export default {
                 }
             }
         }
+
+        ctrl.$parent.$on('optionsChanged', function(options) {
+            ctrl.$emit('optionsChanged', options);
+        });
+        ctrl.$on('optionsChanged', function(options) {
+            ctrl.options = options;
+        });
         
         ctrl.$parent.$on('generalStatusChanged', function(status) {
             ctrl.$emit('generalStatusChanged', status);
         });
-
         ctrl.$on('generalStatusChanged', function(status) {
             ctrl.status = status;
             ctrl.formatRunners();

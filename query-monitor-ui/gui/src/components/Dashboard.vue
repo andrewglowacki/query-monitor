@@ -48,6 +48,7 @@ export default {
         let ctrl = this;
         return {
             status: {},
+            options: { },
             columnDefaults: {
                 sortable: true,
                 editable: false,
@@ -78,8 +79,8 @@ export default {
                     field: 'lastHeard',
                     filter: 'agDateColumnFilter',
                     comparator: ctrl.dateSortComparator,
-                    valueFormatter: ctrl.dataValueFormatter,
-                    tooltip: ctrl.dateTooltipFormatter,
+                    valueFormatter: ctrl.dateValueFormatter,
+                    tooltipValueGetter: ctrl.dateTooltipFormatter,
                     filterParams: {
                         browserDatePicker: true,
                         applyButton: true,
@@ -124,8 +125,8 @@ export default {
                     field: 'lastHeard',
                     filter: 'agDateColumnFilter',
                     comparator: ctrl.dateSortComparator,
-                    valueFormatter: ctrl.dataValueFormatter,
-                    tooltip: ctrl.dateTooltipFormatter,
+                    valueFormatter: ctrl.dateValueFormatter,
+                    tooltipValueGetter: ctrl.dateTooltipFormatter,
                     filterParams: {
                         browserDatePicker: true,
                         applyButton: true,
@@ -193,12 +194,31 @@ export default {
                 return 0;
             }
         },
-        dateTooltipFormatter(params) {
-            return 'Last heard at: ' + moment(params.value).format("MM/DD/YYYY HH:mm:ss");
+        dateValueFormatter(params) {
+            return this.options.durationDates ? this.dateDurationFormatter(params) : this.dateTimeFormatter(params);
         },
-        dataValueFormatter(params) {
+        dateTooltipFormatter(params) {
+            return this.options.durationDates ? this.dateTimeFormatter(params) : this.dateDurationFormatter(params);
+        },
+        dateTimeFormatter(params) {
+            if (params.value == 0) {
+                return 'Never';
+            } else {
+                return moment(params.value).format("MM/DD/YYYY HH:mm:ss");
+            }
+        },
+        dateDurationFormatter(params) {
             let value = params.value;
-            return moment(value).fromNow();
+            if (value == 0) {
+                return 'Never';
+            } else {
+                let ago = moment(value).fromNow();
+                if (ago == 'a few seconds ago') {
+                    return '' + Math.round((new Date().getTime() - value) / 1000) + ' seconds ago';
+                } else {
+                    return ago;
+                }
+            }
         },
         formatMem(params) {
             let value = params.value;
@@ -258,6 +278,14 @@ export default {
     },
     mounted() {
         let ctrl = this;
+        
+        ctrl.$parent.$on('optionsChanged', function(options) {
+            ctrl.$emit('optionsChanged', options);
+        });
+        ctrl.$on('optionsChanged', function(options) {
+            ctrl.options = options;
+        });
+
         ctrl.$parent.$on('generalStatusChanged', function(status) {
             ctrl.status = status;
             ctrl.formatData();

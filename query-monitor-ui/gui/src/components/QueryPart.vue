@@ -2,7 +2,7 @@
     <tbody>
         <tr :class="{ 'even': even }">
             <td>
-                <span v-if="part.children.length == 0" class="fa fa-leaf"></span>
+                <span v-if="part.children.length == 0" class="fa fa-leaf leaf-toggle"></span>
                 <span v-if="part.children.length > 0" class="fa toggle" 
                     :class="{ 'fa-chevron-circle-right': !expanded, 'fa-chevron-circle-down': expanded }" 
                     @click="expanded = !expanded">
@@ -55,5 +55,8 @@ tr.even {
 }
 td.part-children {
     padding-left: 0px;
+}
+.leaf-toggle {
+    color: #aca;
 }
 </style>

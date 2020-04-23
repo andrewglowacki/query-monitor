@@ -3,31 +3,53 @@
         <div class="navbar navbar-expand-lg navbar-light bg-light" style="margin-bottom: 10px">
             <a class="navbar-brand" href="#/">Query Monitor</a>
             <div class="collapse navbar-collapse">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="#/runners" :class="{ 'active': currentPath == '/runners' }">
-                        <i class="fa fa-play"></i> Runners
-                    </a>
-                </li>
-                <li class="nav-item" :class="{ 'active': currentPath == '/executors' }">
-                    <a class="nav-link" href="#/executors">
-                        <i class="fa fa-list"></i> Executors
-                    </a>
-                </li>
-            </ul>
-            <span class="navbar-text">
-                <span v-if="loading">
-                    <i class="fa fa-spinner fa-spin"></i> Loading executor/runner statuses...
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#/runners" :class="{ 'active': currentPath == '/runners' }">
+                            <i class="fa fa-play"></i> Runners
+                        </a>
+                    </li>
+                    <li class="nav-item" :class="{ 'active': currentPath == '/executors' }">
+                        <a class="nav-link" href="#/executors">
+                            <i class="fa fa-list"></i> Executors
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="optionsDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fa fa-cog"></i> Options
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="optionsDropdown" style="width: 315px">
+                            <form class="px-3 py-3">
+                                <div class="form-group" style="margin-bottom: 0px;">
+                                    <label>Time Format:</label>
+                                    <div class="btn-group" style="height: 30px; margin-left: 10px">
+                                        <button class="btn btn-secondary btn-sm" :class="{ 'active': options.durationDates }" @click="setDurationDates(true)">
+                                            <i class="fa fa-check text-success" v-if="options.durationDates"></i>
+                                            Durations
+                                        </button>
+                                        <button class="btn btn-secondary btn-sm" :class="{ 'active': !options.durationDates }" @click="setDurationDates(false)">
+                                            <i class="fa fa-check text-success" v-if="!options.durationDates"></i>
+                                            Date/Time
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </li>
+                </ul>
+                <span class="navbar-text">
+                    <span v-if="loading">
+                        <i class="fa fa-spinner fa-spin"></i> Loading executor/runner statuses...
+                    </span>
+                    <span v-if="!loading && error == ''">
+                        There are
+                        <a href="#/runners">{{status.queryRunnerCount}} runners</a> and
+                        <a href="#/executors">{{status.executorCount}} executors</a> active
+                    </span>
+                    <span v-if="!loading && error != ''">
+                        {{error}}
+                    </span>
                 </span>
-                <span v-if="!loading && error == ''">
-                    There are
-                    <a href="#/runners">{{status.queryRunnerCount}} runners</a> and
-                    <a href="#/executors">{{status.executorCount}} executors</a> active
-                </span>
-                <span v-if="!loading && error != ''">
-                    {{error}}
-                </span>
-            </span>
             </div>
         </div>
         <router-view></router-view>
@@ -46,6 +68,9 @@ export default {
         return {
             loading: true,
             error : '',
+            options: {
+                durationDates: false
+            },
             currentPath: '/',
             test: true,
             status: {
@@ -57,6 +82,16 @@ export default {
         };
     },
     methods: {
+        saveOptions() {
+            window.localStorage.setItem('options', JSON.stringify(this.options));
+            this.$emit('optionsChanged', this.options);
+        },
+        setDurationDates(durationDates) {
+            if (this.options.durationDates != durationDates) {
+                this.options.durationDates = durationDates;
+                this.saveOptions();
+            }
+        },
         loadTestData() {
             let status = { 
                 executors: {},
@@ -168,6 +203,14 @@ export default {
     },
     mounted() {
         let ctrl = this;
+        let optionsStr = window.localStorage.getItem('options');
+        if (optionsStr != null) {
+            ctrl.options = JSON.parse(optionsStr);
+            ctrl.$emit('optionsChanged', ctrl.options);
+        }
+        ctrl.$on('getOptions', function() {
+            ctrl.$emit('optionsChanged', ctrl.options);
+        });
         ctrl.getGeneralStatus();
         ctrl.$on('getStatus', function() {
             ctrl.$emit("generalStatusChanged", ctrl.status);

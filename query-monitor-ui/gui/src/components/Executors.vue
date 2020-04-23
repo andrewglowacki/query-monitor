@@ -198,6 +198,7 @@ export default {
                 executors: {},
                 queryRunners: {'unknown': {}}
             },
+            options: { },
             attemptDetailInfo: ctrl.createEmptyAttemptDetailInfo(),
             attemptDetailParts: [],
             executorDetail: ctrl.createEmptyExecutorDetail(),
@@ -285,7 +286,7 @@ export default {
                     field: 'gcTime',
                     filter: 'agNumberColumnFilter',
                     valueFormatter: ctrl.durationValueFormatter,
-                    tooltip: ctrl.durationTooltip
+                    tooltipValueGetter: ctrl.durationTooltip
                 }, {
                     headerName: 'GC Count',
                     field: 'gcCount',
@@ -297,7 +298,7 @@ export default {
             },
             errorsGrid: {
                 columns: [
-                    ctrl.dateColumn('Time', true),
+                    ctrl.dateColumn('Time'),
                 {
                     headerName: 'Error',
                     field: 'error'
@@ -351,22 +352,18 @@ export default {
         QueryParts
     },
     methods: {
-        dateColumn(headerName, field, reverse) {
+        dateColumn(headerName, field) {
             let ctrl = this;
-            if (typeof field === 'boolean') {
-                reverse = field;
-                field = headerName.toLowerCase();
-            } else if (typeof field === 'undefined') {
+            if (typeof field === 'undefined') {
                 field = headerName.toLowerCase();
             }
-            reverse = typeof reverse === 'undefined' ? false : reverse;
             return {
                 headerName: headerName,
                 field: field,
                 filter: 'agDateColumnFilter',
                 comparator: ctrl.dateSortComparator,
-                valueFormatter: reverse ? ctrl.dateTooltipFormatter : ctrl.dataValueFormatter,
-                tooltip: reverse ? ctrl.dataValueFormatter : ctrl.dateTooltipFormatter,
+                valueFormatter: ctrl.dateValueFormatter,
+                tooltipValueGetter: ctrl.dateTooltipFormatter,
                 filterParams: {
                     browserDatePicker: true,
                     applyButton: true,
@@ -868,14 +865,20 @@ export default {
                 return 0;
             }
         },
+        dateValueFormatter(params) {
+            return this.options.durationDates ? this.dateDurationFormatter(params) : this.dateTimeFormatter(params);
+        },
         dateTooltipFormatter(params) {
+            return this.options.durationDates ? this.dateTimeFormatter(params) : this.dateDurationFormatter(params);
+        },
+        dateTimeFormatter(params) {
             if (params.value == 0) {
                 return 'Never';
             } else {
                 return moment(params.value).format("MM/DD/YYYY HH:mm:ss");
             }
         },
-        dataValueFormatter(params) {
+        dateDurationFormatter(params) {
             let value = params.value;
             if (value == 0) {
                 return 'Never';
@@ -1021,12 +1024,19 @@ export default {
         ctrl.$parent.$on('generalStatusChanged', function(status) {
             ctrl.$emit('generalStatusChanged', status);
         });
+        ctrl.$parent.$on('optionsChanged', function(options) {
+            ctrl.$emit('optionsChanged', options);
+        });
 
+        ctrl.$on('optionsChanged', function(options) {
+            ctrl.options = options;
+        });
         ctrl.$on('generalStatusChanged', function(status) {
             ctrl.status = status;
             ctrl.formatExecutors();
         });
         ctrl.$parent.$emit('getStatus');
+        ctrl.$parent.$emit('getOptions');
 
         window.addEventListener("resize", ctrl.handleResize);
         ctrl.handleResize();
