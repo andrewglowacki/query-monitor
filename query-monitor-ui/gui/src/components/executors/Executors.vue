@@ -810,10 +810,11 @@ export default {
         });
         ctrl.$parent.$emit('getStatus');
         ctrl.$parent.$emit('getOptions');
-
-        ctrl.executorDetailChart.chart = new Chart(document.getElementById('executorStats'), ctrl.executorDetailChart.data);
+        
         window.addEventListener("resize", this.handleResize);
         this.handleResize();
+
+        ctrl.executorDetailChart.chart = new Chart(document.getElementById('executorStats'), ctrl.executorDetailChart.data);
     },
     unmounted() {
         window.removeEventListener("resize", this.handleResize);
