@@ -775,6 +775,13 @@ export default {
             } else {
                 return moment.duration(value).humanize();
             }
+        },
+        handleResize() {
+            let elem = document.getElementById("executorStats");
+            let windowHeight = window.innerHeight;
+            let top = elem.parentElement.children[0].offsetTop;
+            let amount = Math.round((windowHeight - (top + 220)) / 2);
+            elem.style.height = amount + "px";
         }
     },
     mounted() {
@@ -805,6 +812,11 @@ export default {
         ctrl.$parent.$emit('getOptions');
 
         ctrl.executorDetailChart.chart = new Chart(document.getElementById('executorStats'), ctrl.executorDetailChart.data);
+        window.addEventListener("resize", this.handleResize);
+        this.handleResize();
+    },
+    unmounted() {
+        window.removeEventListener("resize", this.handleResize);
     }
 }
 </script>
