@@ -172,6 +172,12 @@
                                 <th>Results</th>
                                 <td v-text="attemptDetailInfo.results"></td>
                             </tr>
+                            <tr>
+                                <th>Server</th>
+                                <td>
+                                    <a :href="'#/executors?name=' + attemptDetailInfo.url">{{attemptDetailInfo.server}}</a>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -416,10 +422,16 @@ export default {
                 return Math.floor(Math.random() * max);
             };
 
+            let index = num(100000);
+            let url = '#/executors?';
+            url += 'running=' + (attempt.finished == 0) + '&';
+            url += 'name=' + encodeURIComponent(attempt.server) + '&';
+            url += 'shard=' + index;
+
             let duration = attempt.finished == 0 ? new Date().getTime() : attempt.finished;
             duration -= attempt.started;
             ctrl.attemptDetailInfo = {
-                index: num(100000),
+                index: index,
                 shard: ctrl.selected.shard,
                 started: moment(attempt.started).format("MM/DD/YYYY HH:mm:ss"),
                 finished: attempt.finished == 0 ? 'Not Finished' : moment(attempt.finished).format("MM/DD/YYYY HH:mm:ss"),
@@ -427,7 +439,9 @@ export default {
                 results: attempt.finished != 0 ? attempt.indexResults : num(10000),
                 startedQueueCount: num(20),
                 finishedQueueCount: num(20),
-                queryString: query.queryString
+                queryString: query.queryString,
+                server: attempt.server,
+                url: url
             };
 
             let createPart = function(start, finished) {
@@ -518,14 +532,22 @@ export default {
                 let duration = entry.info.finished == 0 ? new Date().getTime() : entry.info.finished;
                 duration -= entry.info.started;
 
-                entry.info.started = moment(entry.info.started).format("MM/DD/YYYY HH:mm:ss"),
-                entry.info.finished = entry.info.finished == 0 ? 'Not Finished' : moment(entry.info.finished).format("MM/DD/YYYY HH:mm:ss"),
-                entry.info.duration = ctrl.durationValueFormatter(duration),
+                entry.info.started = moment(entry.info.started).format("MM/DD/YYYY HH:mm:ss");
+                entry.info.finished = entry.info.finished == 0 ? 'Not Finished' : moment(entry.info.finished).format("MM/DD/YYYY HH:mm:ss");
+                entry.info.duration = ctrl.durationValueFormatter(duration);
                 ctrl.attemptDetailInfo = entry.info;
+                ctrl.attemptDetailInfo.server = attempt.server;
                 ctrl.attemptDetailParts = entry.queryParts;
+                
+                let url = '#/executors?';
+                url += 'running=' + (this.attemptDetailInfo.finished == 0) + '&';
+                url += 'name=' + encodeURIComponent(ctrl.attemptDetailInfo.server) + '&';
+                url += 'shard=' + ctrl.attemptDetailInfo.index;
+
+                ctrl.attemptDetailInfo.url = url;
             }).catch((response) => {
-                ctrl.loading.detail = false;
                 if (!axios.isCancel(response)) {
+                    ctrl.loading.detail = false;
                     ctrl.handleQueryError(response);
                 }
             });
@@ -675,8 +697,8 @@ export default {
                 ctrl.queryGrid.rows = response.data;
                 ctrl.loadShards();
             }).catch((response) => {
-                ctrl.loading.queries = false;
                 if (!axios.isCancel(response)) {
+                    ctrl.loading.queries = false;
                     ctrl.handleQueryError(response);
                 }
             });
@@ -842,8 +864,8 @@ export default {
                 ctrl.loading.shards = false;
                 ctrl.formatShards(response.data);
             }).catch((response) => {
-                ctrl.loading.shards = false;
                 if (!axios.isCancel(response)) {
+                    ctrl.loading.shards = false;
                     ctrl.handleQueryError(response);
                 }
             });
@@ -884,6 +906,9 @@ export default {
                     params.query = ctrl.selected.query;
                     if (ctrl.selected.shard != '') {
                         params.shard = ctrl.selected.shard;
+                        if (ctrl.selected.attempt != null) {
+                            params.attempt = ctrl.selected.attempt.server + '#' + ctrl.selected.attempt.started;
+                        }
                     }
                 }
             }
@@ -933,6 +958,15 @@ export default {
                 ctrl.selected.query = parseInt(params.query);
                 if (typeof params.shard !== 'undefined') { 
                     ctrl.selected.shard = params.shard;
+                    if (typeof params.attempt !== 'undefined') {
+                        let pieces = params.attempt.split("#");
+                        if (pieces.length == 2) {
+                            ctrl.selected.attempt = {
+                                server: pieces[0],
+                                started: parseInt(pieces[1])
+                            };
+                        }
+                    }
                 }
             }
         }
@@ -952,9 +986,6 @@ export default {
             ctrl.formatRunners();
         });
         ctrl.$parent.$emit('getStatus');
-
-        ctrl.runnerGrid.gridOptions.api.sizeColumnsToFit();
-        ctrl.queryGrid.gridOptions.api.sizeColumnsToFit();
     }
 }
 </script>

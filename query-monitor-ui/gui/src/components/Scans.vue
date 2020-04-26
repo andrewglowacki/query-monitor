@@ -165,11 +165,11 @@ export default {
                     }
                     ctrl.scanGrid.rows = ctrl.scanGrid.rows.concat(response.data);
                 }).catch((response) => {
-                    ctrl.loading--;
-                    if (ctrl.loading < 0) {
-                        ctrl.loading = 0;
-                    }
                     if (!axios.isCancel(response)) {
+                        ctrl.loading--;
+                        if (ctrl.loading < 0) {
+                            ctrl.loading = 0;
+                        }
                         console.error(response);
                     }
                 });

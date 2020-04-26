@@ -179,6 +179,7 @@ export default {
                 setTimeout(ctrl.getGeneralStatus, 30000);
                 ctrl.$emit("generalStatusChanged", ctrl.status);
             }).catch((response) => {
+                ctrl.loading = false;
                 setTimeout(ctrl.getGeneralStatus, 30000);
                 if (typeof response.message !== 'undefined') {
                     ctrl.error = response.message;

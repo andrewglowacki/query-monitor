@@ -141,8 +141,25 @@
                                 <td v-text="attemptDetailInfo.results"></td>
                             </tr>
                             <tr>
-                                <th>Source</th>
-                                <td v-text="attemptDetailInfo.sourceServer"></td>
+                                <th style="vertical-align: middle">
+                                    Source
+                                </th>
+                                <td>
+                                    <span style="vertical-align: middle">
+                                        {{attemptDetailInfo.sourceServer}}
+                                    </span>
+                                    <button v-if="runnerInfo == null" :disabled="attemptDetailInfo.sourceServer == '' || !attemptDetailInfo.sourceServer" 
+                                        tooltip="Find the runner for this query" class="btn btn-info btn-sm float-right" @click="findSourceRunner()">
+                                        <span v-if="!loading.runner"><i class="fa fa-search"></i> Find Runner</span>
+                                        <span v-if="loading.runner"><i class="fa fa-spinner fa-spin"></i> Finding Runner...</span>
+                                    </button>
+                                    <button v-if="runnerInfo != null && !runnerInfo.found" class="btn btn-info btn-sm float-right" disabled=true>
+                                        Runner Not Found <i class="fa fa-close"></i>
+                                    </button>
+                                    <a v-if="runnerInfo != null && runnerInfo.found" :href="runnerInfo.url" role="button" class="btn btn-info btn-sm float-right">
+                                        View Runner <i class="fa fa-arrow-right"></i>
+                                    </a>
+                                </td>
                             </tr>
                             <tr>
                                 <th>Error</th>
@@ -196,6 +213,9 @@ export default {
             attemptDetailInfo: ctrl.createEmptyAttemptDetailInfo(),
             attemptDetailParts: [],
             executorDetail: ctrl.createEmptyExecutorDetail(),
+            runnerInfo: {
+                found: false
+            },
             executorDetailChart: {
                 chart: null,
                 data: {
@@ -215,12 +235,14 @@ export default {
             cancelTokens: {
                 detail: null,
                 shards: null,
-                parts: null
+                parts: null,
+                runner: null
             },
             loading: {
                 detail: false,
                 shards: false,
-                parts: false
+                parts: false,
+                runner: false
             },
             executorGrid: {
                 gridOptions: {
@@ -341,6 +363,93 @@ export default {
             }
             this.errorsGrid.rows = this.executorDetail.recentErrors.concat([]);
         },
+        setRunnerInfoUrl() {
+            let url = '#/runners?';
+            url += 'running=' + (this.attemptDetailInfo.finished == 0) + '&';
+            url += 'name=' + encodeURIComponent(this.runnerInfo.name) + '&';
+            url += 'query=' + this.runnerInfo.query + '&';
+            url += 'shard=' + encodeURIComponent(this.runnerInfo.shard) + '&';
+            url += 'attempt=' + encodeURIComponent(this.runnerInfo.attempt.server + '#' + this.runnerInfo.attempt.started);
+            this.runnerInfo.url = url;
+        },
+        findSourceRunner() {
+            let ctrl = this;
+            
+            if (ctrl.loading.runner) {
+                ctrl.loading.runner = false;
+                ctrl.cancelTokens.runner.cancel();
+            }
+
+            if (ctrl.selected.shard == -1) {
+                return;
+            }
+
+            let shard = null;
+            ctrl.shardsGrid.gridOptions.api.forEachNode((node) => {
+                if (node.data.index == ctrl.selected.shard) {
+                    shard = node.data;
+                }
+            });
+
+            let params = { 
+                server: shard.sourceServer,
+                shard: shard.shard,
+                queryString: shard.queryString,
+                started: shard.started
+            };
+
+            ctrl.loading.runner = true;
+            if (ctrl.isTest()) {
+                let num = function(max) {
+                    return Math.floor(Math.random() * max);
+                }
+
+                let token = setTimeout(function() {
+                    ctrl.loading.runner = false;
+                    if (Math.random() > 0.5) {
+                        ctrl.runnerInfo = {
+                            found: false
+                        };
+                    } else {
+                        let runners = Object.keys(ctrl.status.queryRunners);
+                        let runnerName = runners[num(runners.length)];
+                        let runner = ctrl.status.queryRunners[runnerName];
+                        ctrl.runnerInfo = {
+                            found: true,
+                            name: runnerName,
+                            shard: shard.shard,
+                            query: num(ctrl.selected.running ? runner.running : runner.finished),
+                            attempt: {
+                                server: ctrl.selected.name,
+                                started: shard.started
+                            }
+                        };
+                        ctrl.setRunnerInfoUrl();
+                    }
+                }, 5000);
+
+                ctrl.cancelTokens.runner = {
+                    cancel() {
+                        clearTimeout(token);
+                    }
+                };
+                return;
+            }
+
+            let token = axios.CancelToken.source();
+            axios.post('api/runner/find', params, {
+                cancelToken: token.token
+            }).then((response) => {
+                ctrl.loading.runner = false;
+                ctrl.runnerInfo = response.data;
+                ctrl.setRunnerInfoUrl();
+            }).catch((response) => {
+                if (!axios.isCancel(response)) {
+                    ctrl.loading.runner = false;
+                    ctrl.handleQueryError(response);
+                }
+            })
+        },
         loadTestExecutorDetail() {
             let ctrl = this;
             ctrl.loading.detail = false;
@@ -418,8 +527,8 @@ export default {
                 ctrl.populateErrors();
                 ctrl.formatDetailStats();
             }).catch((response) => {
-                ctrl.loading.detail = false;
                 if (!axios.isCancel(response)) {
+                    ctrl.loading.detail = false;
                     ctrl.handleQueryError(response);
                 }
             });
@@ -539,7 +648,6 @@ export default {
                 });
             }
             ctrl.shardsGrid.rows = shards;
-            ctrl.shardsGrid.gridOptions.api.sizeColumnsToFit();
         },
         loadShards() {
             let ctrl = this;
@@ -573,8 +681,8 @@ export default {
                 ctrl.loading.shards = false;
                 ctrl.shardsGrid.rows = response.data;
             }).catch((response) => {
-                ctrl.loading.shards = false;
                 if (!axios.isCancel(response)) {
+                    ctrl.loading.shards = false;
                     ctrl.handleQueryError(response);
                 }
             });
@@ -617,6 +725,7 @@ export default {
                 sourceServer: shard.sourceServer,
                 error: shard.error
             };
+            ctrl.runnerInfo = null;
 
             let createPart = function(start, finished) {
                 let results = num(10000);
@@ -700,9 +809,10 @@ export default {
                 entry.info.duration = ctrl.durationValueFormatter(duration),
                 ctrl.attemptDetailInfo = entry.info;
                 ctrl.attemptDetailParts = entry.queryParts;
+                ctrl.runnerInfo = null;
             }).catch((response) => {
-                ctrl.loading.parts = false;
                 if (!axios.isCancel(response)) {
+                    ctrl.loading.parts = false;
                     ctrl.handleQueryError(response);
                 }
             });
@@ -810,7 +920,7 @@ export default {
         });
         ctrl.$parent.$emit('getStatus');
         ctrl.$parent.$emit('getOptions');
-        
+
         window.addEventListener("resize", this.handleResize);
         this.handleResize();
 
