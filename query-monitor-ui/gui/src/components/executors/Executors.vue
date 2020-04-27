@@ -44,6 +44,13 @@
                         <span v-if="!loading.detail && selected.name != ''">{{selected.name}}</span>
                         <span v-if="!loading.detail && selected.name == ''">No Executor Selected</span>
                         <span v-if="loading.detail"><i class="fa fa-spinner fa-spin"></i> Loading...</span>
+
+                        <a class="btn btn-info btn-sm float-right" role="button" v-if="selected.name != ''" :href="'#/scans?name=' + encodeURIComponent(selected.name)" style="margin-top: 5px">
+                            View Scans <i class="fa fa-arrow-right"></i>
+                        </a>
+                        <button class="btn btn-info btn-sm float-right" v-if="selected.name == ''" style="margin-top: 5px" disabled>
+                            View Scans <i class="fa fa-arrow-right"></i>
+                        </button>
                     </h3>
                 </div>
                 <div class="card-body">
@@ -209,7 +216,9 @@ export default {
                 executors: {},
                 queryRunners: {'unknown': {}}
             },
-            options: { },
+            options: { 
+                test: false
+            },
             attemptDetailInfo: ctrl.createEmptyAttemptDetailInfo(),
             attemptDetailParts: [],
             executorDetail: ctrl.createEmptyExecutorDetail(),
@@ -399,7 +408,7 @@ export default {
             };
 
             ctrl.loading.runner = true;
-            if (ctrl.isTest()) {
+            if (ctrl.options.test) {
                 let num = function(max) {
                     return Math.floor(Math.random() * max);
                 }
@@ -505,10 +514,14 @@ export default {
                 ctrl.cancelTokens.detail.cancel();
             }
 
+            if (ctrl.selected.name == '') {
+                return;
+            }
+
             let url = 'api/executor/' + encodeURIComponent(ctrl.selected.name) + '/status';
             
             ctrl.loading.detail = true;
-            if (ctrl.isTest()) {
+            if (ctrl.options.test) {
                 let token = setTimeout(ctrl.loadTestExecutorDetail, 500);
                 ctrl.cancelTokens.detail = {
                     cancel() {
@@ -657,6 +670,10 @@ export default {
                 ctrl.cancelTokens.shards.cancel();
             }
 
+            if (ctrl.selected.name == '') {
+                return;
+            }
+
             let url = 'api/executor/' + encodeURIComponent(ctrl.selected.name);
             if (ctrl.selected.running) {
                 url += '/running';
@@ -665,7 +682,7 @@ export default {
             }
 
             ctrl.loading.shards = true;
-            if (ctrl.isTest()) {
+            if (ctrl.options.test) {
                 let token = setTimeout(ctrl.loadTestShards, 1000);
                 ctrl.cancelTokens.shards = {
                     cancel() {
@@ -784,7 +801,7 @@ export default {
             let url = 'api/executor/' + encodeURIComponent(ctrl.selected.name) + "/" + ctrl.selected.shard;
 
             ctrl.loading.parts = true;
-            if (ctrl.isTest()) {
+            if (ctrl.options.test) {
                 let token = setTimeout(ctrl.loadTestQueryParts, 1000);
                 ctrl.cancelTokens.parts = {
                     cancel() {
@@ -849,9 +866,6 @@ export default {
                 query: params
             });
         },
-        isTest() {
-            return typeof this.$route.query.test !== 'undefined';
-        },
         formatExecutors() {
             let ctrl = this;
 
@@ -912,7 +926,12 @@ export default {
         });
 
         ctrl.$on('optionsChanged', function(options) {
+            let testChanged = ctrl.options.test != options.test;
             ctrl.options = options;
+            if (testChanged) {
+                ctrl.loadShards();
+                ctrl.loadExecutorDetail();
+            }
         });
         ctrl.$on('generalStatusChanged', function(status) {
             ctrl.status = status;

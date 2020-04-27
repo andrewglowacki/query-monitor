@@ -50,11 +50,15 @@ export default {
     data() {
         let ctrl = this;
         return {
+            firstLoad: true,
             status: {
                 queryRunners: {},
                 executors: {}
             },
             loading: 0,
+            options: {
+                test: false
+            },
             loadingTokens: [],
             targetGrid: {
                 gridOptions: {
@@ -137,13 +141,15 @@ export default {
 
             ctrl.scanGrid.rows = [];
 
+            let selectedNames = [];
             let selected = this.targetGrid.gridOptions.api.getSelectedRows();
             selected.forEach((row) => {
                 let type = row.type.toLowerCase();
                 let name = row.name;
+                selectedNames.push(name);
                 let url = 'api/' + type + '/' + encodeURIComponent(name) + "/scans";
 
-                if (ctrl.isTest()) {
+                if (ctrl.options.test) {
                     let token = setTimeout(ctrl.createTestScans, Math.round(Math.random() * 2000), name, type);
                     tokens.push({
                         cancel: () => {
@@ -175,6 +181,15 @@ export default {
                 });
             });
 
+            if (!ctrl.firstLoad) {
+                ctrl.$router.push({
+                    path: '/scans',
+                    query: {
+                        name: selectedNames.join(',')
+                    }
+                });
+            }
+            
             ctrl.loadingTokens = tokens;
             ctrl.loading = tokens.length;
         },
@@ -195,9 +210,30 @@ export default {
                 });
             }
             this.targetGrid.rows = rows;
-        },
-        isTest() {
-            return typeof this.$route.query.test !== 'undefined';
+
+            if (this.firstLoad) {
+                let ctrl = this;
+                let selectRows = function() {
+                    let selected = ctrl.$route.query.name;
+                    if (typeof selected !== 'undefined') {
+                        selected = selected.split(',');
+                    }
+                    let checked = 0;
+                    ctrl.targetGrid.gridOptions.api.forEachNode((node) => {
+                        checked++;
+                        if (selected.indexOf(node.data.name) >= 0) {
+                            node.setSelected(true);
+                        }
+                    });
+                    if (checked != ctrl.targetGrid.rows.length) {
+                        setTimeout(selectRows, 200);
+                    } else {
+                        ctrl.firstLoad = false;
+                        ctrl.loadScans();
+                    }
+                };
+                selectRows();
+            }
         }
     },
     mounted() {
@@ -211,6 +247,18 @@ export default {
             ctrl.formatData();
         });
         ctrl.$parent.$emit('getStatus');
+
+        ctrl.$parent.$on('optionsChanged', (options) => {
+            ctrl.$emit('optionsChanged', options);
+        });
+        ctrl.$on('optionsChanged', (options) => {
+            let testChanged = ctrl.options.test != options.test;
+            ctrl.options = options;
+            if (testChanged) {
+                ctrl.firstLoad = true;
+                ctrl.loadScans();
+            }
+        });
     }
 }
 </script>

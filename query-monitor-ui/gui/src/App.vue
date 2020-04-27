@@ -25,16 +25,29 @@
                         </a>
                         <div class="dropdown-menu" aria-labelledby="optionsDropdown" style="width: 315px">
                             <form class="px-3 py-3">
-                                <div class="form-group" style="margin-bottom: 0px;">
+                                <div class="form-group" style="margin-bottom: 10px;">
                                     <label>Time Format:</label>
                                     <div class="btn-group" style="height: 30px; margin-left: 10px">
-                                        <button class="btn btn-secondary btn-sm" :class="{ 'active': options.durationDates }" @click="setDurationDates(true)">
+                                        <button class="btn btn-secondary btn-sm" :class="{ 'active': options.durationDates }" @click="setOption('durationDates', true)">
                                             <i class="fa fa-check text-success" v-if="options.durationDates"></i>
                                             Durations
                                         </button>
-                                        <button class="btn btn-secondary btn-sm" :class="{ 'active': !options.durationDates }" @click="setDurationDates(false)">
+                                        <button class="btn btn-secondary btn-sm" :class="{ 'active': !options.durationDates }" @click="setOption('durationDates', false)">
                                             <i class="fa fa-check text-success" v-if="!options.durationDates"></i>
                                             Date/Time
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0px;">
+                                    <label>Test Mode:</label>
+                                    <div class="btn-group" style="height: 30px; margin-left: 10px">
+                                        <button class="btn btn-secondary btn-sm" :class="{ 'active': options.test }" @click="setOption('test', true)">
+                                            <i class="fa fa-check text-success" v-if="options.test"></i>
+                                            Yes
+                                        </button>
+                                        <button class="btn btn-secondary btn-sm" :class="{ 'active': !options.test }" @click="setOption('test', false)">
+                                            <i class="fa fa-check text-success" v-if="!options.test"></i>
+                                            No
                                         </button>
                                     </div>
                                 </div>
@@ -51,8 +64,8 @@
                         <a href="#/runners">{{status.queryRunnerCount}} runners</a> and
                         <a href="#/executors">{{status.executorCount}} executors</a> active
                     </span>
-                    <span v-if="!loading && error != ''">
-                        {{error}}
+                    <span class="text-danger" v-if="!loading && error != ''">
+                        <i class="fa fa-exclamation-triangle"></i> {{error}}
                     </span>
                 </span>
             </div>
@@ -74,7 +87,8 @@ export default {
             loading: true,
             error : '',
             options: {
-                durationDates: false
+                durationDates: false,
+                test: false
             },
             currentPath: '/',
             test: true,
@@ -91,9 +105,9 @@ export default {
             window.localStorage.setItem('options', JSON.stringify(this.options));
             this.$emit('optionsChanged', this.options);
         },
-        setDurationDates(durationDates) {
-            if (this.options.durationDates != durationDates) {
-                this.options.durationDates = durationDates;
+        setOption(option, value) {
+            if (this.options[option] != value) {
+                this.options[option] = value;
                 this.saveOptions();
             }
         },
@@ -168,7 +182,7 @@ export default {
                 ctrl.error = '';
             }
 
-            if (ctrl.isTest()) {
+            if (ctrl.options.test) {
                 setTimeout(ctrl.loadTestData, 500);
                 return;
             }
@@ -195,16 +209,6 @@ export default {
                     ctrl.error = JSON.stringify(response);
                 }
             });
-        },
-        isTest() {
-            if (this.test) {
-                return true;
-            } else if (typeof this.$route.query.test !== 'undefined') {
-                this.test = true;
-                return true;
-            } else {
-                return true;
-            }
         }
     },
     mounted() {
@@ -223,13 +227,6 @@ export default {
         });
         ctrl.$router.afterEach((to) => {
             ctrl.currentPath = to.path;
-        });
-        ctrl.$router.beforeEach((to, from, next) => {
-            if (ctrl.isTest()) {
-                // retain the test status
-                to.query.test = true;
-            }
-            next();
         });
         ctrl.currentPath = ctrl.$route.path;
     }

@@ -46,7 +46,13 @@
                             Queries: {{selected.name}}
                             <span v-if="loading.queries"> - <i class="fa fa-spinner fa-spin"></i> Loading...</span>
                         </span>
-                        <div class="float-right btn-group" style="padding-top: 5px;">
+                        <a class="btn btn-info btn-sm float-right" role="button" v-if="selected.name != ''" :href="'#/scans?name=' + encodeURIComponent(selected.name)" style="margin-top: 5px">
+                            View Scans <i class="fa fa-arrow-right"></i>
+                        </a>
+                        <button class="btn btn-info btn-sm float-right" v-if="selected.name == ''" style="margin-top: 5px" disabled>
+                            View Scans <i class="fa fa-arrow-right"></i>
+                        </button>
+                        <div class="float-right btn-group" style="padding-top: 5px; margin-right: 10px">
                             <button class="btn btn-secondary btn-sm" :class="{ 'active': selected.running }" @click="setRunningStatus(true)">
                                 <i class="fa fa-check text-success" v-if="selected.running"></i>
                                 Running
@@ -220,7 +226,9 @@ export default {
             status: {
                 queryRunners: {}
             },
-            options: {},
+            options: {
+                test: false
+            },
             shardMap: {},
             attemptDetailInfo: ctrl.createEmptyAttemptDetailInfo(),
             attemptDetailParts: [],
@@ -513,7 +521,7 @@ export default {
             };
 
             ctrl.loading.detail = true;
-            if (ctrl.isTest()) {
+            if (ctrl.options.test) {
                 let token = setTimeout(ctrl.loadTestDetail, 1000);
                 ctrl.cancelTokens.detail = {
                     cancel() {
@@ -540,7 +548,7 @@ export default {
                 ctrl.attemptDetailParts = entry.queryParts;
                 
                 let url = '#/executors?';
-                url += 'running=' + (this.attemptDetailInfo.finished == 0) + '&';
+                url += 'running=' + (ctrl.attemptDetailInfo.finished == 0) + '&';
                 url += 'name=' + encodeURIComponent(ctrl.attemptDetailInfo.server) + '&';
                 url += 'shard=' + ctrl.attemptDetailInfo.index;
 
@@ -665,12 +673,16 @@ export default {
         loadQueries() {
             let ctrl = this;
 
-            ctrl.populateErrors();
-
             if (ctrl.loading.queries) {
                 ctrl.loading.queries = false;
                 ctrl.cancelTokens.queries.cancel();
             }
+
+            if (ctrl.selected.name == '') {
+                return;
+            }
+
+            ctrl.populateErrors();
 
             let url = 'api/runner/' + encodeURIComponent(ctrl.selected.name);
             if (ctrl.selected.running) {
@@ -680,7 +692,7 @@ export default {
             }
 
             ctrl.loading.queries = true;
-            if (ctrl.isTest()) {
+            if (ctrl.options.test) {
                 let token = setTimeout(ctrl.loadTestQueries, 1000);
                 ctrl.cancelTokens.queries = {
                     cancel() {
@@ -846,7 +858,7 @@ export default {
             }
 
             ctrl.loading.shards = true;
-            if (ctrl.isTest()) {
+            if (ctrl.options.test) {
                 let token = setTimeout(ctrl.loadTestShards, 1000);
                 ctrl.cancelTokens.shards = {
                     cancel: () => {
@@ -917,9 +929,6 @@ export default {
                 query: params
             });
         },
-        isTest() {
-            return typeof this.$route.query.test !== 'undefined';
-        },
         formatRunners() {
             let ctrl = this;
 
@@ -975,7 +984,11 @@ export default {
             ctrl.$emit('optionsChanged', options);
         });
         ctrl.$on('optionsChanged', function(options) {
+            let testChanged = ctrl.options.test != options.test;
             ctrl.options = options;
+            if (testChanged) {
+                ctrl.loadQueries();
+            }
         });
         
         ctrl.$parent.$on('generalStatusChanged', function(status) {
@@ -986,6 +999,7 @@ export default {
             ctrl.formatRunners();
         });
         ctrl.$parent.$emit('getStatus');
+        ctrl.$parent.$emit('getOptions');
     }
 }
 </script>
