@@ -9,6 +9,8 @@ import java.util.TreeSet;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.message.BasicHeader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Description;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import sos.accumulo.monitor.data.AccumuloScanInfo;
 import sos.accumulo.monitor.data.QueryInfo;
 import sos.accumulo.monitor.data.QueryInfoDetail;
+import sos.accumulo.monitor.data.QueryRunnerMatch;
 import sos.accumulo.monitor.data.QueryRunnerStatus;
 
 @RestController
@@ -60,15 +63,42 @@ public class QueryRunnerController {
         return status;
     }
 
+    @Description("Gets all the currently running scans on this runner")
     @GetMapping("/{name}/scans")
     public List<AccumuloScanInfo> getAccumuloScans(@PathVariable String name) throws IOException {
         String address = statusDao.getAddress(name);
         return HttpQuery.normalQuery("http://" + address + "/scans", SCAN_LIST);
     }
 
+    @Description("Gets the detailed query info for the specified query index")
     @GetMapping("/{name}/query/{index}")
     public QueryInfoDetail getQueryInfoDetail(@PathVariable String name, @PathVariable long index) throws IOException {
         String address = statusDao.getAddress(name);
         return HttpQuery.normalQuery("http://" + address + "/query/" + index, QueryInfoDetail.class);
+    }
+
+    @Description("Finds the query runner that matches as closely as possible to the provided parameters")
+    @PostMapping("/find")
+    public QueryRunnerMatch findSourceRunner(
+        @RequestParam String server,
+        @RequestParam String shard,
+        @RequestParam String queryString,
+        @RequestParam long started) throws IOException {
+
+        List<NameValuePair> params = new ArrayList<>();
+        params.add(new BasicHeader("shard", shard));
+        params.add(new BasicHeader("queryString", queryString));
+        params.add(new BasicHeader("started", "" + started));
+
+        Set<String> candidates = statusDao.getRunnersOnServer(server);
+        for (String runner : candidates) {
+            String address = statusDao.getAddress(runner);
+            QueryRunnerMatch match = HttpQuery.normalPostQuery("http://" + address + "/find", params, QueryRunnerMatch.class);
+            if (match != null && match.isFound()) {
+                match.setName(runner);
+                return match;
+            }
+        }
+        return new QueryRunnerMatch();
     }
 }

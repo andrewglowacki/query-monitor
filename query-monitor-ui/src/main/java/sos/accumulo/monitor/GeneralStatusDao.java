@@ -1,5 +1,7 @@
 package sos.accumulo.monitor;
 
+import java.util.Set;
+
 import sos.accumulo.monitor.data.ExecutorStatusDetail;
 import sos.accumulo.monitor.data.GeneralStatus;
 import sos.accumulo.monitor.data.QueryRunnerStatus;
@@ -15,5 +17,7 @@ public interface GeneralStatusDao {
 	public void register(String name, String address);
 
 	public String getAddress(String name);
+
+	public Set<String> getRunnersOnServer(String server);
 
 }

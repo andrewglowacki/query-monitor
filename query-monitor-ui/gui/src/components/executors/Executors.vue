@@ -378,7 +378,7 @@ export default {
             url += 'name=' + encodeURIComponent(this.runnerInfo.name) + '&';
             url += 'query=' + this.runnerInfo.query + '&';
             url += 'shard=' + encodeURIComponent(this.runnerInfo.shard) + '&';
-            url += 'attempt=' + encodeURIComponent(this.runnerInfo.attempt.server + '#' + this.runnerInfo.attempt.started);
+            url += 'attempt=' + encodeURIComponent(this.runnerInfo.attemptServer + '#' + this.runnerInfo.attemptStarted);
             this.runnerInfo.url = url;
         },
         findSourceRunner() {
@@ -428,10 +428,8 @@ export default {
                             name: runnerName,
                             shard: shard.shard,
                             query: num(ctrl.selected.running ? runner.running : runner.finished),
-                            attempt: {
-                                server: ctrl.selected.name,
-                                started: shard.started
-                            }
+                            attemptServer: ctrl.selected.name,
+                            attemptStarted: shard.started
                         };
                         ctrl.setRunnerInfoUrl();
                     }

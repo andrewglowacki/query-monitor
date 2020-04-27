@@ -45,30 +45,35 @@ public class ExecutorController {
         return status;
     }
 
+    @Description("Gets all the currently running shards")
     @GetMapping("/{name}/running")
     public Set<ExecutorShardInfo> getRunningShards(@PathVariable String name) throws IOException {
         String address = statusDao.getAddress(name);
         return HttpQuery.normalQuery("http://" + address + "/running", SHARD_INFO_LIST);
     }
 
+    @Description("Gets the recently finished shards")
     @GetMapping("/{name}/finished")
     public Set<ExecutorShardInfo> getFinishedShards(@PathVariable String name) throws IOException {
         String address = statusDao.getAddress(name);
         return HttpQuery.normalQuery("http://" + address + "/finished", SHARD_INFO_LIST);
     }
 
+    @Description("Gets all the currently running scans on this executor")
     @GetMapping("/{name}/scans")
     public List<AccumuloScanInfo> getAccumuloScans(@PathVariable String name) throws IOException {
         String address = statusDao.getAddress(name);
         return HttpQuery.normalQuery("http://" + address + "/scans", SCAN_LIST);
     }
 
+    @Description("Gets detailed information for the specified shard index")
     @GetMapping("/{name}/shard/{index}")
     public ExecutorShardInfoDetail getShardInfoDetail(@PathVariable String name, @PathVariable long index) throws IOException {
         String address = statusDao.getAddress(name);
         return HttpQuery.normalQuery("http://" + address + "/shard/" + index, ExecutorShardInfoDetail.class);
     }
 
+    @Description("Finds a corresponding shard that matches as closely as possible to the provided parameters")
     @PostMapping("/{name}/find")
     public ExecutorShardInfoDetail getShardInfoDetail(
         @PathVariable String name, 

@@ -1,6 +1,9 @@
 package sos.accumulo.monitor;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -80,7 +83,8 @@ public class GeneralStatusDaoImpl implements GeneralStatusDao {
         if (oldAddress == null) {
             log.info("Registered new query runner: " + name + " at address: " + address);
         } else {
-            log.info("Replaced query runner: " + name + " previously at address: " + oldAddress + " now at address: " + address);
+            log.info("Replaced query runner: " + name + " previously at address: " + oldAddress + " now at address: "
+                    + address);
         }
     }
 
@@ -94,7 +98,18 @@ public class GeneralStatusDaoImpl implements GeneralStatusDao {
         if (!executorFileMonitor.getExecutors().contains(name)) {
             throw new IllegalArgumentException("No query runner or executor exists with name: " + name);
         }
-        
+
         return name + ":" + executorMonitorPort;
+    }
+
+    @Override
+    public Set<String> getRunnersOnServer(String server) {
+        Set<String> names = new HashSet<>();
+        for (Entry<String, String> entry : queryRunners.entrySet()) {
+            if (entry.getValue().startsWith(server + ":")) {
+                names.add(entry.getKey());
+            }
+        }
+        return names;
     }
 }
