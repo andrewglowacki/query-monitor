@@ -128,6 +128,7 @@ public class ExecutorTracker {
         finished.put(index, detail);
         finishedOrdered.add(detail);
         finishedCountStat.incrementAndGet();
+        resultsTotalStat.addAndGet(detail.getInfo().getResults());
         finishedCount.incrementAndGet();
 
         if (size > MAX_FINISHED_SIZE) {
