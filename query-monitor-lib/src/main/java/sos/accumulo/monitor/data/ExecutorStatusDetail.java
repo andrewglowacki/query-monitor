@@ -1,19 +1,20 @@
 package sos.accumulo.monitor.data;
 
 import java.util.List;
+import java.util.Set;
 
 public class ExecutorStatusDetail extends ExecutorStatus {
 
-    private List<ErrorInfo> recentErrors;
+    private Set<ErrorInfo> recentErrors;
     private List<Long> statTimes;
     private List<Long> finishedStats;
     private List<Long> resultStats;
 
-    public List<ErrorInfo> getRecentErrors() {
+    public Set<ErrorInfo> getRecentErrors() {
         return recentErrors;
     }
 
-    public void setRecentErrors(List<ErrorInfo> recentErrors) {
+    public void setRecentErrors(Set<ErrorInfo> recentErrors) {
         this.recentErrors = recentErrors;
     }
 

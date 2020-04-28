@@ -2,7 +2,10 @@ package sos.accumulo.monitor.data;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class QueryPartInfo {
+    private final long BASE_SIZE = 8 * 8;
     private String partString;
     private List<QueryPartInfo> children;
     private long started;
@@ -10,6 +13,15 @@ public class QueryPartInfo {
     private long results;
     private long unfilteredResults;
     private long waitTime;
+
+    @JsonIgnore
+    public long getSizeEstimate() {
+        long size = BASE_SIZE + (2 * partString.length());
+        for (QueryPartInfo info : children) {
+            size += info.getSizeEstimate();
+        }
+        return size;
+    }
 
     public String getPartString() {
         return partString;

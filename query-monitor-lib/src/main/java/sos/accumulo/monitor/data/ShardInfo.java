@@ -2,7 +2,10 @@ package sos.accumulo.monitor.data;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class ShardInfo {
+    private static final int BASE_SIZE_ESTIMATE = 8 * 4;
     private String shard;
     private List<AttemptInfo> failedAttempts;
     private AttemptInfo latestAttempt;
@@ -30,6 +33,15 @@ public class ShardInfo {
     public void setLatestAttempt(AttemptInfo latestAttempt) {
         this.latestAttempt = latestAttempt;
     }
+
+    @JsonIgnore
+	public long getSizeEstimate() {
+        long failedSize = (8 * failedAttempts.size());
+        for (AttemptInfo attempt : failedAttempts) {
+            failedSize += attempt.getSizeEstimate();
+        }
+		return BASE_SIZE_ESTIMATE + shard.length() + failedSize + latestAttempt.getSizeEstimate();
+	}
 
     
 }

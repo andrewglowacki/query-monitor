@@ -1,12 +1,12 @@
 package sos.accumulo.monitor.data;
 
-import java.util.List;
+import java.util.Set;
 
 public class QueryRunnerStatus {
     private RunnerHealth health;
     private int running;
     private long finished;
-    private List<ErrorInfo> recentErrors;
+    private Set<ErrorInfo> recentErrors;
     private long lastHeard;
     
     public long getLastHeard() {
@@ -41,11 +41,11 @@ public class QueryRunnerStatus {
         this.finished = finished;
     }
 
-    public List<ErrorInfo> getRecentErrors() {
+    public Set<ErrorInfo> getRecentErrors() {
         return recentErrors;
     }
 
-    public void setRecentErrors(List<ErrorInfo> recentErrors) {
+    public void setRecentErrors(Set<ErrorInfo> recentErrors) {
         this.recentErrors = recentErrors;
     }
 

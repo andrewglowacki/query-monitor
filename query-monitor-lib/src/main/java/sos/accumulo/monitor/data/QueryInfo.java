@@ -1,10 +1,12 @@
 package sos.accumulo.monitor.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 @JsonDeserialize(builder = QueryInfo.Builder.class)
 public class QueryInfo implements Comparable<QueryInfo> {
+    private static final long BASE_SIZE_ESTIMATE = (8 * 13) + 8;
     private final long index;
     private final long started;
     private final QueryType queryType;
@@ -197,4 +199,9 @@ public class QueryInfo implements Comparable<QueryInfo> {
 
         return Long.compare(index, o.index);
     }
+
+    @JsonIgnore
+	public long getSizeEstimate() {
+		return BASE_SIZE_ESTIMATE + originThreadName.length() + queryString.length() + (error == null ? 0 : error.length());
+	}
 }

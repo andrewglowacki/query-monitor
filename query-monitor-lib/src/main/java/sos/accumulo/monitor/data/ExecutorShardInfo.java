@@ -1,10 +1,12 @@
 package sos.accumulo.monitor.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 
 @JsonDeserialize(builder = ExecutorShardInfo.Builder.class)
 public class ExecutorShardInfo implements Comparable<ExecutorShardInfo> {
+    private static final long BASE_SIZE_ESTIMATE = (8 * 8) + 8;
     private final long index;
     private final String shard;
     private final long started;
@@ -95,6 +97,19 @@ public class ExecutorShardInfo implements Comparable<ExecutorShardInfo> {
         this.finishedQueueCount = builder.finishedQueueCount;
         this.results = builder.results;
         this.error = builder.error;
+    }
+
+    @JsonIgnore
+    public long getSizeEstimate() {
+        long stringSizes = 0;
+        if (error != null) {
+            stringSizes += error.length();
+        }
+        stringSizes += shard.length();
+        stringSizes += queryString.length();
+        stringSizes += sourceServer.length();
+
+        return BASE_SIZE_ESTIMATE + (2 * stringSizes);
     }
 
     public long getIndex() {

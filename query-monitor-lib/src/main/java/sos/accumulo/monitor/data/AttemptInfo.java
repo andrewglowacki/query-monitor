@@ -1,6 +1,9 @@
 package sos.accumulo.monitor.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class AttemptInfo {
+    private static final long BASE_SIZE_ESTIMATE = (8 * 9) + 4;
     private String server;
     private long started;
     private long indexFinished;
@@ -82,5 +85,10 @@ public class AttemptInfo {
     public void setDataSize(long dataSize) {
         this.dataSize = dataSize;
     }
+
+    @JsonIgnore
+	public long getSizeEstimate() {
+		return BASE_SIZE_ESTIMATE + server.length() + (error == null ? 0 : error.length());
+	}
     
 }

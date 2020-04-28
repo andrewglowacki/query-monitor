@@ -16,7 +16,12 @@ public class RunnerHealth {
     public static RunnerHealth create(long mostRecentError) {
         RunnerHealth health = new RunnerHealth();
         health.mostRecentError = mostRecentError;
-        health.threads = Thread.activeCount();
+
+        ThreadGroup root = Thread.currentThread().getThreadGroup();
+        while (root.getParent() != null) {
+            root = root.getParent();
+        }
+        health.threads = root.activeCount();
 
         long eachMax = 0;
         for (GarbageCollectorMXBean bean : ManagementFactory.getGarbageCollectorMXBeans()) {

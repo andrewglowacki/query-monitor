@@ -1,7 +1,6 @@
 package sos.accumulo.monitor;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -75,7 +74,7 @@ public class ExecutorController {
 
     @Description("Finds a corresponding shard that matches as closely as possible to the provided parameters")
     @PostMapping("/{name}/find")
-    public ExecutorShardInfoDetail getShardInfoDetail(
+    public ExecutorShardInfoDetail findShardInfoDetail(
         @PathVariable String name, 
         @RequestParam long started, 
         @RequestParam String shard, 
@@ -83,16 +82,11 @@ public class ExecutorController {
         
         String address = statusDao.getAddress(name);
         
-        String url = "http://" + address + "/find?";
-        url += "started=" + started + "&";
-        url += "shard=" + URLEncoder.encode(shard, "UTF-8") + "&";
-        url += "queryString=" + URLEncoder.encode(queryString, "UTF-8");
-        
         List<NameValuePair> params = new ArrayList<>();
         params.add(new BasicHeader("started", "" + started));
         params.add(new BasicHeader("shard", shard));
         params.add(new BasicHeader("queryString", queryString));
 
-        return HttpQuery.normalPostQuery(url, params, ExecutorShardInfoDetail.class);
+        return HttpQuery.normalPostQuery("http://" + address + "/find", params, ExecutorShardInfoDetail.class);
     }
 }

@@ -3,9 +3,11 @@ package sos.accumulo.monitor.data;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class QueryInfoDetail implements Comparable<QueryInfoDetail> {
+    private static final int BASE_SIZE_ESTIMATE = 12;
     private final QueryInfo info;
     private final List<ShardInfo> shards;
 
@@ -26,5 +28,14 @@ public class QueryInfoDetail implements Comparable<QueryInfoDetail> {
     public int compareTo(QueryInfoDetail o) {
         return info.compareTo(o.info);
     }
+
+    @JsonIgnore
+	public long getSizeEstimate() {
+        long shardSize = shards.size() * 8;
+        for (ShardInfo info : shards) {
+            shardSize += info.getSizeEstimate();
+        }
+		return BASE_SIZE_ESTIMATE + shardSize + info.getSizeEstimate();
+	}
     
 }
