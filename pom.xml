@@ -13,7 +13,7 @@
     </properties>
     <modules>
         <module>query-monitor-lib</module>
-        <module>query-monitor-ui</module>
         <module>query-monitor-tracker</module>
+        <module>query-monitor-ui</module>
     </modules>
 </project>

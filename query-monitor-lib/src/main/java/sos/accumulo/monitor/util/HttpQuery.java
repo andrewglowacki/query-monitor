@@ -1,4 +1,4 @@
-package sos.accumulo.monitor;
+package sos.accumulo.monitor.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -18,6 +18,8 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 
@@ -42,6 +44,28 @@ public class HttpQuery {
                 return MAPPER.readValue(inStream, clazz);
             }
         });
+    }
+    public static void normalPostQuery(String url, List<NameValuePair> params) throws IOException {
+        try (CloseableHttpClient client = createClient(normalConfig)) {
+            HttpPost post = new HttpPost(url);
+            post.setEntity(new UrlEncodedFormEntity(params));
+            try (CloseableHttpResponse response = client.execute(post)) {
+                if (response.getStatusLine().getStatusCode() != 200) {
+                    throw new IOException("Response from runner/executor was: " + response.getStatusLine().getStatusCode() + ": " + getErrorReason(response));
+                }
+            }
+        }
+    }
+    public static void normalPostQuery(String url, Object body) throws IOException {
+        try (CloseableHttpClient client = createClient(normalConfig)) {
+            HttpPost post = new HttpPost(url);
+            post.setEntity(new StringEntity(MAPPER.writeValueAsString(body), ContentType.APPLICATION_JSON));
+            try (CloseableHttpResponse response = client.execute(post)) {
+                if (response.getStatusLine().getStatusCode() != 200) {
+                    throw new IOException("Response from runner/executor was: " + response.getStatusLine().getStatusCode() + ": " + getErrorReason(response));
+                }
+            }
+        }
     }
     public static <T> T normalPostQuery(String url, List<NameValuePair> params, Class<T> clazz) throws IOException {
         try (CloseableHttpClient client = createClient(normalConfig)) {

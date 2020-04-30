@@ -12,7 +12,7 @@ public class QueryInfoDetail implements Comparable<QueryInfoDetail> {
     private final List<ShardInfo> shards;
 
     @JsonCreator
-    private QueryInfoDetail(@JsonProperty QueryInfo info, @JsonProperty List<ShardInfo> shards) {
+    public QueryInfoDetail(@JsonProperty QueryInfo info, @JsonProperty List<ShardInfo> shards) {
         this.info = info;
         this.shards = shards;
     }

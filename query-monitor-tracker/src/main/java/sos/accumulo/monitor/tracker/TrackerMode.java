@@ -2,5 +2,6 @@ package sos.accumulo.monitor.tracker;
 
 public enum TrackerMode {
     Runner,
-    Executor
+    Executor,
+    Proxy
 }

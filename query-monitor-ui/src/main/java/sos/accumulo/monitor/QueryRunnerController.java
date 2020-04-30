@@ -25,6 +25,7 @@ import sos.accumulo.monitor.data.QueryInfo;
 import sos.accumulo.monitor.data.QueryInfoDetail;
 import sos.accumulo.monitor.data.QueryRunnerMatch;
 import sos.accumulo.monitor.data.QueryRunnerStatus;
+import sos.accumulo.monitor.util.HttpQuery;
 
 @RestController
 @RequestMapping("/api/runner")

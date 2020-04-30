@@ -48,7 +48,7 @@ public class ExecutorController {
         return AccumuloScanInfo.listScans();
     }
     
-    @GetMapping("/query/{index}")
+    @GetMapping("/shard/{index}")
     public ExecutorShardInfoDetail getShardDetail(@PathVariable long index) {
         return tracker.getByIndex(index);
     }

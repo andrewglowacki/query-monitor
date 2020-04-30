@@ -29,7 +29,7 @@ public class ExecutorTracker {
     
     private static final long MAX_FINISHED_SIZE = 1024 * 1024 * 100;
     private static final int MAX_ERRORS = 10;
-    private static final ExecutorTracker tracker = new ExecutorTracker();
+    private static volatile ExecutorTracker tracker = null;
     private static final int MAX_STAT_SAMPLES = 12 * 24;
     private final AtomicLong finishedCount = new AtomicLong();
     private final AtomicLong resultsTotalStat = new AtomicLong();
@@ -69,6 +69,13 @@ public class ExecutorTracker {
     }
 
     public static ExecutorTracker getInstance() {
+        if (tracker == null) {
+            synchronized (ExecutorTracker.class) {
+                if (tracker == null) {
+                    tracker = new ExecutorTracker();
+                }
+            }
+        }
         return tracker;
     }
 

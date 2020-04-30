@@ -12,6 +12,7 @@ import sos.accumulo.monitor.data.ExecutorStatus;
 import sos.accumulo.monitor.data.ExecutorStatusDetail;
 import sos.accumulo.monitor.data.GeneralStatus;
 import sos.accumulo.monitor.data.QueryRunnerStatus;
+import sos.accumulo.monitor.util.HttpQuery;
 
 public class StatusUpdater implements Runnable {
 

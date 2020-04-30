@@ -24,6 +24,7 @@ import sos.accumulo.monitor.data.AccumuloScanInfo;
 import sos.accumulo.monitor.data.ExecutorShardInfo;
 import sos.accumulo.monitor.data.ExecutorShardInfoDetail;
 import sos.accumulo.monitor.data.ExecutorStatusDetail;
+import sos.accumulo.monitor.util.HttpQuery;
 
 @RestController
 @RequestMapping("/api/executor")
