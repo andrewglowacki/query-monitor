@@ -35,8 +35,8 @@ public class RunnerController {
     }
 
     @PostMapping("/proxy/start")
-    public long proxyRegister(@RequestParam String address) {
-        return tracker.registerProxy(address);
+    public long proxyRegister(@RequestParam String address, @RequestParam String id) {
+        return tracker.registerProxy(address, id);
     }
 
     @PostMapping("/proxy/finished")

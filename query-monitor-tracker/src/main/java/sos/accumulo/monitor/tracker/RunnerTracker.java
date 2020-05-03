@@ -46,9 +46,10 @@ public class RunnerTracker {
     private final NavigableSet<QueryInfoDetail> finishedOrdered = new ConcurrentSkipListSet<>();
     private final NavigableSet<ErrorInfo> recentErrors = new ConcurrentSkipListSet<>();
     private final AtomicLong finishedSize = new AtomicLong();
-    private final Map<Long, String> proxiedRunning = new ConcurrentHashMap<>();
+    private final Map<Long, RegisteredProxy> proxiedRunning = new ConcurrentHashMap<>();
     private volatile String originProxyServer;
     private volatile String localProxyServer;
+    private volatile String proxyId;
 
     private RunnerTracker() {
     }
@@ -57,9 +58,10 @@ public class RunnerTracker {
         return tracker;
     }
 
-    public void setProxyServer(String originProxyServer, String localProxyServer) {
+    public void setProxyServer(String originProxyServer, String localProxyServer, String proxyId) {
         this.originProxyServer = originProxyServer;
         this.localProxyServer = localProxyServer;
+        this.proxyId = proxyId;
     }
 
     public ProxyQuery startProxyQuery(QueryInfo.Builder builder) {
@@ -70,6 +72,7 @@ public class RunnerTracker {
         try {
             List<NameValuePair> params = new ArrayList<>();
             params.add(new BasicHeader("address", localProxyServer));
+            params.add(new BasicHeader("id", proxyId));
             return new ProxyQuery(HttpQuery.normalPostQuery("http://" + originProxyServer + "/proxy/start", params, Long.class), builder);
         } catch (IOException ex) { 
             log.warn("Failed to register proxy query - query will not be tracked", ex);
@@ -113,9 +116,9 @@ public class RunnerTracker {
         running.put(detail.getInfo().getIndex(), detail);
     }
 
-    public long registerProxy(String address) {
+    public long registerProxy(String address, String proxyId) {
         long queryId = nextQueryIndex();
-        proxiedRunning.put(queryId, address);
+        proxiedRunning.put(queryId, new RegisteredProxy(queryId, address, proxyId));
         return queryId;
     }
 
@@ -126,13 +129,29 @@ public class RunnerTracker {
         }
     }
 
+    public void terminateAll(String proxyId) {
+        proxiedRunning.values().stream()
+            .filter(proxy -> proxy.getId().equals(proxyId))
+            .map(proxy -> new QueryInfoDetail(new QueryInfo.Builder()
+                .setError("Proxy runner crashed without reporting status")
+                .setFinished(System.currentTimeMillis())
+                .setIndex(proxy.getQueryIndex())
+                .setOriginThreadName("unknown")
+                .setQueryString("unknown")
+                .setResultSize(0)
+                .setResults(0)
+                .setStarted(proxy.getStarted())
+                .build(), new ArrayList<>(0)))
+            .forEach(this::finish);
+    }
+
     public List<AccumuloScanInfo> getProxyScans() {
         List<AccumuloScanInfo> scans = new ArrayList<>();
-        for (String proxyAddress : proxiedRunning.values()) {
+        for (RegisteredProxy proxy : proxiedRunning.values()) {
             try {
-                scans.addAll(HttpQuery.normalQuery("http://" + proxyAddress + "/scans", SCAN_LIST));
+                scans.addAll(HttpQuery.normalQuery("http://" + proxy.getAddress() + "/scans", SCAN_LIST));
             } catch (IOException ex) {
-                log.error("Failed to get scans from proxy: " + proxyAddress, ex);
+                log.error("Failed to get scans from proxy: " + proxy.getAddress(), ex);
             }
         }
         return scans;
@@ -149,9 +168,9 @@ public class RunnerTracker {
             return detail;
         }
 
-        String proxyAddress = proxiedRunning.get(index);
-        if (proxyAddress != null) {
-            detail = HttpQuery.normalQuery("http://" + proxyAddress + "/query/" + index, QueryInfoDetail.class);
+        RegisteredProxy proxy = proxiedRunning.get(index);
+        if (proxy != null) {
+            detail = HttpQuery.normalQuery("http://" + proxy.getAddress() + "/query/" + index, QueryInfoDetail.class);
             if (detail != null) {
                 return detail;
             }
@@ -202,9 +221,9 @@ public class RunnerTracker {
             params.add(new BasicHeader("queryString", queryString));
             params.add(new BasicHeader("shard", shard));
             params.add(new BasicHeader("started", "" + started));
-            for (String proxyAddress : proxiedRunning.values()) {
+            for (RegisteredProxy proxy : proxiedRunning.values()) {
                 try {
-                    QueryRunnerMatch thisMatch = HttpQuery.normalPostQuery("http://" + proxyAddress + "/find", params, QueryRunnerMatch.class);
+                    QueryRunnerMatch thisMatch = HttpQuery.normalPostQuery("http://" + proxy.getAddress() + "/find", params, QueryRunnerMatch.class);
                     if (thisMatch.isFound() && thisMatch.getAttemptStarted() > match.getAttemptStarted()) {
                         match = thisMatch;
                         if (match.getAttemptStarted() == started) {
@@ -212,7 +231,7 @@ public class RunnerTracker {
                         }
                     }
                 } catch (IOException ex) {
-                    log.error("Failed to find match from proxy: " + proxyAddress, ex);
+                    log.error("Failed to find match from proxy: " + proxy.getAddress(), ex);
                 }
             }
         }
@@ -269,11 +288,11 @@ public class RunnerTracker {
             running.add(info.getInfo());
         }
         if (proxiedRunning.size() > 0) {
-            for (String proxyAddress : proxiedRunning.values()) {
+            for (RegisteredProxy proxy : proxiedRunning.values()) {
                 try {
-                    running.addAll(HttpQuery.normalQuery("http://" + proxyAddress + "/running", QUERY_INFO_LIST));
+                    running.addAll(HttpQuery.normalQuery("http://" + proxy.getAddress() + "/running", QUERY_INFO_LIST));
                 } catch (IOException ex) {
-                    log.error("Failed to get running queries from proxy: " + proxyAddress, ex);
+                    log.error("Failed to get running queries from proxy: " + proxy.getAddress(), ex);
                 }
             }
         }
