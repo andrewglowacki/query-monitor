@@ -17,7 +17,6 @@ import org.springframework.stereotype.Repository;
 
 import sos.accumulo.monitor.data.AccumuloScanInfo;
 import sos.accumulo.monitor.data.QueryInfo;
-import sos.accumulo.monitor.data.QueryInfo.Builder;
 import sos.accumulo.monitor.data.QueryInfoDetail;
 import sos.accumulo.monitor.data.QueryRunnerMatch;
 import sos.accumulo.monitor.util.HttpQuery;
@@ -31,8 +30,8 @@ public class ProxyDaoOrigin implements ProxyDao {
     private static final Logger log = LoggerFactory.getLogger(ProxyDaoOrigin.class);
 
     @Override
-    public ProxyQuery startProxyQuery(Builder builder) {
-        return new ProxyQuery(-1, builder);
+    public long startProxyQuery() {
+        return -1;
     }
 
     @Override

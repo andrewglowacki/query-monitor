@@ -10,14 +10,16 @@ import sos.accumulo.monitor.data.ShardInfo;
 
 public class ProxyQuery implements AutoCloseable {
 
+    private final RunnerTracker tracker;
     private final long queryIndex;
     private final QueryInfoDetail detail;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
-    public ProxyQuery(long queryIndex, QueryInfo.Builder builder) {
+    public ProxyQuery(RunnerTracker tracker, long queryIndex, QueryInfo.Builder builder) {
+        this.tracker = tracker;
         this.queryIndex = queryIndex;
         this.detail = new QueryInfoDetail(builder.setIndex(queryIndex).build(), new CopyOnWriteArrayList<>());
-        RunnerTracker.getInstance().start(detail);
+        tracker.start(detail);
     }
 
     public QueryInfoDetail getDetail() {
@@ -32,8 +34,8 @@ public class ProxyQuery implements AutoCloseable {
     public void close() {
         if (queryIndex >= 0) {
             if (closed.getAndSet(true)) {
-                RunnerTracker.getInstance().finish(detail);
-                RunnerTracker.getInstance().finishProxyQuery(this);
+                tracker.finish(detail);
+                tracker.finishProxyQuery(this);
             }
         }
     }

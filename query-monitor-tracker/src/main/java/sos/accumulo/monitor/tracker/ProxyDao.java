@@ -10,7 +10,7 @@ import sos.accumulo.monitor.data.QueryInfoDetail;
 import sos.accumulo.monitor.data.QueryRunnerMatch;
 
 public interface ProxyDao {
-    public ProxyQuery startProxyQuery(QueryInfo.Builder builder) throws IOException;
+    public long startProxyQuery() throws IOException;
 
 	public void finishProxyQuery(ProxyQuery query) throws IOException;
 

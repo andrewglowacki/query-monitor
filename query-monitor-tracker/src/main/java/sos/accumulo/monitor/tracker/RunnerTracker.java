@@ -49,10 +49,10 @@ public class RunnerTracker {
 
     public ProxyQuery startProxyQuery(QueryInfo.Builder builder) {
         try {
-            return proxyDao.startProxyQuery(builder);
+            return new ProxyQuery(this, proxyDao.startProxyQuery(), builder);
         } catch (IOException ex) { 
             log.warn("Failed to register proxy query - query will not be tracked", ex);
-            return new ProxyQuery(-1, builder);
+            return new ProxyQuery(null, -1, builder);
         }
     }
 

@@ -19,7 +19,6 @@ import sos.accumulo.monitor.data.AccumuloScanInfo;
 import sos.accumulo.monitor.data.QueryInfo;
 import sos.accumulo.monitor.data.QueryInfoDetail;
 import sos.accumulo.monitor.data.QueryRunnerMatch;
-import sos.accumulo.monitor.data.QueryInfo.Builder;
 import sos.accumulo.monitor.util.HttpQuery;
 
 @Profile("TrackerModeProxy")
@@ -40,11 +39,11 @@ public class ProxyDaoTarget implements ProxyDao {
     private String localHostAddress = InetAddress.getLoopbackAddress().getHostAddress();
 
     @Override
-    public ProxyQuery startProxyQuery(Builder builder) throws IOException {
+    public long startProxyQuery() throws IOException {
         List<NameValuePair> params = new ArrayList<>();
         params.add(new BasicHeader("address", localHostAddress + ":" + localPort));
         params.add(new BasicHeader("id", proxyId));
-        return new ProxyQuery(HttpQuery.normalPostQuery("http://" + originProxyServer + "/proxy/start", params, Long.class), builder);
+        return HttpQuery.normalPostQuery("http://" + originProxyServer + "/proxy/start", params, Long.class);
     }
 
     @Override
