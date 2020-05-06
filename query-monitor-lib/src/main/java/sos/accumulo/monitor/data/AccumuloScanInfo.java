@@ -50,7 +50,8 @@ public class AccumuloScanInfo {
             threads = new Thread[count * 2];
         }
 
-        for (Thread thread : threads) {
+        for (int i = 0; i < count; i++) {
+            Thread thread = threads[i];
             String name = thread.getName();
             Matcher scanMatcher = SCANNER_PATTERN.matcher(name);
             if (scanMatcher.matches()) {
@@ -83,4 +84,11 @@ public class AccumuloScanInfo {
 
         return scans;
     }
+
+    @Override
+    public String toString() {
+        return "{ranges=" + ranges + ", server=" + server + ", table=" + table + "}";
+    }
+
+    
 }
