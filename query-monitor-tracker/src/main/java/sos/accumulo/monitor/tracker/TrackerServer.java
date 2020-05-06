@@ -11,6 +11,7 @@ import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -30,14 +31,14 @@ public class TrackerServer
     @LocalServerPort
     private int port;
 
-    @Value("${announce.address}")
-    private String announceAddress;
-
     @Value("${tracker.host:}")
     private String trackerHost;
 
     @Value("${runner.name:}")
     private String runnerName;
+
+    @Autowired
+    private MonitorDao monitorDao;
 
     @PostConstruct
     public void setup() {
@@ -59,11 +60,11 @@ public class TrackerServer
             public Thread newThread(Runnable r) {
                 Thread thread = new Thread(r);
                 thread.setDaemon(true);
-                thread.setName("Query Monitor Tracker Announcement Thread - To: " + announceAddress);
+                thread.setName("Query Monitor Tracker Announcement Thread - To: " + monitorDao.getAnnounceAddress());
                 return thread;
             }
         });
-        announceThread.scheduleWithFixedDelay(new AnnouncementThread(announceAddress, runnerName, trackerAddress), 0, 5, TimeUnit.MINUTES);
+        announceThread.scheduleWithFixedDelay(new AnnouncementThread(monitorDao, runnerName, trackerAddress), 0, 5, TimeUnit.MINUTES);
     }
 
     @PreDestroy
@@ -74,17 +75,27 @@ public class TrackerServer
         trackerAddress = null;
     }
 
+    public static ExecutorTracker getExecutorTracker() {
+        return context.getBean(ExecutorTracker.class);
+    }
+
+    public static RunnerTracker getRunnerTracker() {
+        return context.getBean(RunnerTracker.class);
+    }
+
     protected static String getTrackerAddress() {
         return trackerAddress;
     }
 
-    public static synchronized TrackerHandle startProxy() {
+    public static synchronized TrackerHandle startProxy(String originProxyAddress, String proxyId) {
         if (context != null) {
             if (TrackerServer.mode != TrackerMode.Proxy) {
                 throw new IllegalArgumentException("Tracker server is already running in Proxy mode");
             }
             return new TrackerHandle();
         }
+        System.setProperty("origin.proxy.address", originProxyAddress);
+        System.setProperty("proxy.id", proxyId);
         System.setProperty("server.address", "" + Inet4Address.getLoopbackAddress().getHostAddress());
 		return startServer(TrackerMode.Proxy);
     }

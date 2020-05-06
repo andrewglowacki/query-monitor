@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,7 +23,8 @@ import sos.accumulo.monitor.data.QueryRunnerStatus;
 @RestController
 public class RunnerController {
 
-    private final RunnerTracker tracker = RunnerTracker.getInstance();
+    @Autowired
+    private RunnerTracker tracker;
 
     @GetMapping("/running")
     public Set<QueryInfo> getRunning() {

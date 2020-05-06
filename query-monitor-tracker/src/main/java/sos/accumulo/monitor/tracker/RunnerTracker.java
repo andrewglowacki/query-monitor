@@ -13,13 +13,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 
 import sos.accumulo.monitor.data.AccumuloScanInfo;
 import sos.accumulo.monitor.data.AttemptInfo;
@@ -30,15 +28,13 @@ import sos.accumulo.monitor.data.QueryRunnerMatch;
 import sos.accumulo.monitor.data.QueryRunnerStatus;
 import sos.accumulo.monitor.data.RunnerHealth;
 import sos.accumulo.monitor.data.ShardInfo;
-import sos.accumulo.monitor.util.HttpQuery;
 
+@Profile({"TrackerModeRunner", "TrackerModeProxy"})
+@Component
 public class RunnerTracker {
     private static final Logger log = LoggerFactory.getLogger(RunnerTracker.class);
-    private static final JavaType SCAN_LIST = TypeFactory.defaultInstance().constructCollectionType(ArrayList.class, AccumuloScanInfo.class);
-    private static final JavaType QUERY_INFO_LIST = TypeFactory.defaultInstance().constructCollectionType(ArrayList.class, QueryInfo.class);
     private static final long MAX_FINISHED_SIZE = 1024 * 1024 * 100;
     private static final int MAX_ERRORS = 10;
-    private static final RunnerTracker tracker = new RunnerTracker();
     private final AtomicLong queryCounter = new AtomicLong();
     private final AtomicLong finishedCount = new AtomicLong();
     private final Map<Long, QueryInfoDetail> running = new ConcurrentHashMap<>();
@@ -47,33 +43,13 @@ public class RunnerTracker {
     private final NavigableSet<ErrorInfo> recentErrors = new ConcurrentSkipListSet<>();
     private final AtomicLong finishedSize = new AtomicLong();
     private final Map<Long, RegisteredProxy> proxiedRunning = new ConcurrentHashMap<>();
-    private volatile String originProxyServer;
-    private volatile String localProxyServer;
-    private volatile String proxyId;
 
-    private RunnerTracker() {
-    }
-
-    public static RunnerTracker getInstance() {
-        return tracker;
-    }
-
-    public void setProxyServer(String originProxyServer, String localProxyServer, String proxyId) {
-        this.originProxyServer = originProxyServer;
-        this.localProxyServer = localProxyServer;
-        this.proxyId = proxyId;
-    }
+    @Autowired
+    private ProxyDao proxyDao;
 
     public ProxyQuery startProxyQuery(QueryInfo.Builder builder) {
-        if (localProxyServer == null || localProxyServer.isEmpty() || originProxyServer == null || originProxyServer.isEmpty()) {
-            log.error("No local proxy server is registered - cannot start proxy query");
-            return new ProxyQuery(-1, builder);
-        }
         try {
-            List<NameValuePair> params = new ArrayList<>();
-            params.add(new BasicHeader("address", localProxyServer));
-            params.add(new BasicHeader("id", proxyId));
-            return new ProxyQuery(HttpQuery.normalPostQuery("http://" + originProxyServer + "/proxy/start", params, Long.class), builder);
+            return proxyDao.startProxyQuery(builder);
         } catch (IOException ex) { 
             log.warn("Failed to register proxy query - query will not be tracked", ex);
             return new ProxyQuery(-1, builder);
@@ -85,21 +61,14 @@ public class RunnerTracker {
      */
     public void finishProxyQuery(ProxyQuery query) {
         try {
-            HttpQuery.normalPostQuery("http://" + originProxyServer + "/proxy/finished", query.getDetail());
+            proxyDao.finishProxyQuery(query);
         } catch (IOException ex) { 
             log.warn("Failed to finish proxy query - query will not be dangling", ex);
         }
     }
 
     public void recordError(String error) {
-        if (originProxyServer != null) {
-            try {
-                List<NameValuePair> params = new ArrayList<>();
-                params.add(new BasicHeader("error", error));
-                HttpQuery.normalPostQuery("http://" + originProxyServer + "/proxy/error", params);
-            } catch (IOException ex) {
-                log.warn("Failed to report error to proxy origin server", ex);
-            }
+        if (proxyDao.recordError(error)) {
             return;
         }
         recentErrors.add(ErrorInfo.create(error));
@@ -149,7 +118,7 @@ public class RunnerTracker {
         List<AccumuloScanInfo> scans = new ArrayList<>();
         for (RegisteredProxy proxy : proxiedRunning.values()) {
             try {
-                scans.addAll(HttpQuery.normalQuery("http://" + proxy.getAddress() + "/scans", SCAN_LIST));
+                scans.addAll(proxyDao.getRunningScans(proxy.getAddress()));
             } catch (IOException ex) {
                 log.error("Failed to get scans from proxy: " + proxy.getAddress(), ex);
             }
@@ -170,7 +139,7 @@ public class RunnerTracker {
 
         RegisteredProxy proxy = proxiedRunning.get(index);
         if (proxy != null) {
-            detail = HttpQuery.normalQuery("http://" + proxy.getAddress() + "/query/" + index, QueryInfoDetail.class);
+            detail = proxyDao.getQueryDetail(proxy.getAddress(), index);
             if (detail != null) {
                 return detail;
             }
@@ -217,23 +186,7 @@ public class RunnerTracker {
         }
 
         if (proxiedRunning.size() > 0) {
-            List<NameValuePair> params = new ArrayList<>();
-            params.add(new BasicHeader("queryString", queryString));
-            params.add(new BasicHeader("shard", shard));
-            params.add(new BasicHeader("started", "" + started));
-            for (RegisteredProxy proxy : proxiedRunning.values()) {
-                try {
-                    QueryRunnerMatch thisMatch = HttpQuery.normalPostQuery("http://" + proxy.getAddress() + "/find", params, QueryRunnerMatch.class);
-                    if (thisMatch.isFound() && thisMatch.getAttemptStarted() > match.getAttemptStarted()) {
-                        match = thisMatch;
-                        if (match.getAttemptStarted() == started) {
-                            return match;
-                        }
-                    }
-                } catch (IOException ex) {
-                    log.error("Failed to find match from proxy: " + proxy.getAddress(), ex);
-                }
-            }
+            match = proxyDao.findMatch(queryString, shard, started, proxiedRunning.values(), match);
         }
         return match;
     }
@@ -290,7 +243,7 @@ public class RunnerTracker {
         if (proxiedRunning.size() > 0) {
             for (RegisteredProxy proxy : proxiedRunning.values()) {
                 try {
-                    running.addAll(HttpQuery.normalQuery("http://" + proxy.getAddress() + "/running", QUERY_INFO_LIST));
+                    running.addAll(proxyDao.getRunningQueries(proxy.getAddress()));
                 } catch (IOException ex) {
                     log.error("Failed to get running queries from proxy: " + proxy.getAddress(), ex);
                 }

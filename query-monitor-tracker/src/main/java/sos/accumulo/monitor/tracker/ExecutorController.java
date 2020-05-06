@@ -3,6 +3,7 @@ package sos.accumulo.monitor.tracker;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,7 +22,8 @@ import sos.accumulo.monitor.data.ExecutorStatusDetail;
 @RestController
 public class ExecutorController {
 
-    private final ExecutorTracker tracker = ExecutorTracker.getInstance();
+    @Autowired
+    private ExecutorTracker tracker;
 
     @GetMapping("/running")
     public Set<ExecutorShardInfo> getRunning() {

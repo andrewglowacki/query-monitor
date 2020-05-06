@@ -18,6 +18,12 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
+
 import sos.accumulo.monitor.data.ErrorInfo;
 import sos.accumulo.monitor.data.ExecutorShardInfo;
 import sos.accumulo.monitor.data.ExecutorShardInfoDetail;
@@ -25,11 +31,12 @@ import sos.accumulo.monitor.data.ExecutorStatus;
 import sos.accumulo.monitor.data.ExecutorStatusDetail;
 import sos.accumulo.monitor.data.RunnerHealth;
 
+@Profile("TrackerModeExecutor")
+@Component
 public class ExecutorTracker {
     
     private static final long MAX_FINISHED_SIZE = 1024 * 1024 * 100;
     private static final int MAX_ERRORS = 10;
-    private static volatile ExecutorTracker tracker = null;
     private static final int MAX_STAT_SAMPLES = 12 * 24;
     private final AtomicLong finishedCount = new AtomicLong();
     private final AtomicLong resultsTotalStat = new AtomicLong();
@@ -40,17 +47,13 @@ public class ExecutorTracker {
     private final NavigableSet<ErrorInfo> recentErrors = new ConcurrentSkipListSet<>();
     private final AtomicLong finishedSize = new AtomicLong();
     private final NavigableSet<ExecutorStatSample> stats = new ConcurrentSkipListSet<>();
-    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory(){
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread thread = new Thread(r);
-            thread.setName("Executor Monitor Tracker Thread");
-            thread.setDaemon(true);
-            return thread;
-        }
-    });
+    private volatile ScheduledExecutorService executor;
 
-    private ExecutorTracker() {
+    @PostConstruct
+    public synchronized void setup() {
+        if (executor != null) {
+            return;
+        }
         Calendar now = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         now.set(Calendar.SECOND, 0);
         now.add(Calendar.MINUTE, 5 - (now.get(Calendar.MINUTE) % 5));
@@ -58,7 +61,25 @@ public class ExecutorTracker {
         if (waitTime < 0) {
             waitTime = 0;
         }
+
+        executor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory(){
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r);
+                thread.setName("Executor Monitor Tracker Thread");
+                thread.setDaemon(true);
+                return thread;
+            }
+        });
         executor.scheduleAtFixedRate(this::recordLatestStat, waitTime, 300, TimeUnit.SECONDS);
+    }
+
+    @PreDestroy
+    public void cleanup() {
+        if (executor != null) {
+            executor.shutdownNow();
+            executor = null;
+        }
     }
 
     protected void recordLatestStat() {
@@ -66,17 +87,6 @@ public class ExecutorTracker {
         if (stats.size() >= MAX_STAT_SAMPLES) {
             stats.pollFirst();
         }
-    }
-
-    public static ExecutorTracker getInstance() {
-        if (tracker == null) {
-            synchronized (ExecutorTracker.class) {
-                if (tracker == null) {
-                    tracker = new ExecutorTracker();
-                }
-            }
-        }
-        return tracker;
     }
 
     public void recordError(String error) {
