@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class QueryPartInfo {
     private final long BASE_SIZE = 8 * 8;
-    private String partString;
+    private String partString = "";
     private List<QueryPartInfo> children;
     private long started;
     private long finished;

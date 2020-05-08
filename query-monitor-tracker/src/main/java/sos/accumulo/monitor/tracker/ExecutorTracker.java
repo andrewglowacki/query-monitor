@@ -35,9 +35,9 @@ import sos.accumulo.monitor.data.RunnerHealth;
 @Component
 public class ExecutorTracker {
     
-    private static final long MAX_FINISHED_SIZE = 1024 * 1024 * 100;
-    private static final int MAX_ERRORS = 10;
-    private static final int MAX_STAT_SAMPLES = 12 * 24;
+    protected static final long MAX_FINISHED_SIZE = 1024 * 1024 * 100;
+    protected static final int MAX_ERRORS = 10;
+    protected static final int MAX_STAT_SAMPLES = 12 * 24;
     private final AtomicLong finishedCount = new AtomicLong();
     private final AtomicLong resultsTotalStat = new AtomicLong();
     private final AtomicLong finishedCountStat = new AtomicLong();
@@ -141,6 +141,13 @@ public class ExecutorTracker {
 
     public void finish(long index) {
         ExecutorShardInfoDetail detail = running.remove(index);
+        if (detail == null) {
+            return;
+        }
+        
+        if (detail.getInfo().getFinished() == 0) {
+            detail.getInfo().setFinished(System.currentTimeMillis());
+        }
         long size = finishedSize.addAndGet(detail.getSizeEstimate());
         finished.put(index, detail);
         finishedOrdered.add(detail);
@@ -150,11 +157,13 @@ public class ExecutorTracker {
 
         if (size > MAX_FINISHED_SIZE) {
             synchronized (this) {
+                long sizeOrig = size = finishedSize.get();
                 while (size > MAX_FINISHED_SIZE && finishedOrdered.size() > 0) {
                     ExecutorShardInfoDetail oldest = finishedOrdered.pollFirst();
                     finished.remove(oldest.getInfo().getIndex());
                     size -= oldest.getSizeEstimate();
                 }
+                finishedSize.addAndGet(size - sizeOrig);
             }
         }
     }

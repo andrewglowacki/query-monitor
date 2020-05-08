@@ -7,10 +7,10 @@ public class AnnouncementThread implements Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(AnnouncementThread.class);
     private final String name;
-    private final MonitorDao monitorDao;
+    private final AnnounceDao monitorDao;
     private final String trackerAddress;
 
-    public AnnouncementThread(MonitorDao monitorDao, String name, String trackerAddress) {
+    public AnnouncementThread(AnnounceDao monitorDao, String name, String trackerAddress) {
         this.monitorDao = monitorDao;
         this.name = name;
         this.trackerAddress = trackerAddress;

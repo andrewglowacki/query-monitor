@@ -7,12 +7,14 @@ import java.util.List;
 import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicHeader;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 import sos.accumulo.monitor.util.HttpQuery;
 
+@Profile("TrackerModeRunner")
 @Repository
-public class MonitorDaoImpl implements MonitorDao {
+public class AnnounceDaoImpl implements AnnounceDao {
 
     @Value("${announce.address}")
     private String announceAddress;

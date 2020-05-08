@@ -2,7 +2,7 @@ package sos.accumulo.monitor.tracker;
 
 import java.io.IOException;
 
-public interface MonitorDao {
+public interface AnnounceDao {
     
     public String getAnnounceAddress();
 
