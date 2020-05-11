@@ -17,8 +17,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-import sos.accumulo.monitor.tracker.controller.Invocation;
-import sos.accumulo.monitor.tracker.controller.TestController;
+import sos.accumulo.monitor.test.controller.Invocation;
+import sos.accumulo.monitor.test.controller.TestController;
 
 
 @RunWith(SpringRunner.class)

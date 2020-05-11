@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import sos.accumulo.monitor.data.ExecutorShardInfo;
 import sos.accumulo.monitor.data.ExecutorShardInfoDetail;
-import sos.accumulo.monitor.tracker.controller.Invocation;
-import sos.accumulo.monitor.tracker.controller.TestController;
+import sos.accumulo.monitor.test.controller.Invocation;
+import sos.accumulo.monitor.test.controller.TestController;
 import sos.accumulo.monitor.util.HttpQuery;
 
 public class TrackerServerTest {

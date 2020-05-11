@@ -25,8 +25,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import sos.accumulo.monitor.data.QueryInfo;
 import sos.accumulo.monitor.data.QueryInfoDetail;
-import sos.accumulo.monitor.tracker.controller.Invocation;
-import sos.accumulo.monitor.tracker.controller.TestController;
+import sos.accumulo.monitor.test.controller.Invocation;
+import sos.accumulo.monitor.test.controller.TestController;
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("ProxyDaoTargetTest")

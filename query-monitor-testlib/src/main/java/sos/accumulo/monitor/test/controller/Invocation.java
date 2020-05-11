@@ -1,4 +1,4 @@
-package sos.accumulo.monitor.tracker.controller;
+package sos.accumulo.monitor.test.controller;
 
 import static org.junit.Assert.assertEquals;
 

@@ -26,8 +26,8 @@ import sos.accumulo.monitor.data.QueryInfo;
 import sos.accumulo.monitor.data.QueryInfoDetail;
 import sos.accumulo.monitor.data.QueryRunnerMatch;
 import sos.accumulo.monitor.data.QueryType;
-import sos.accumulo.monitor.tracker.controller.Invocation;
-import sos.accumulo.monitor.tracker.controller.TestController;
+import sos.accumulo.monitor.test.controller.Invocation;
+import sos.accumulo.monitor.test.controller.TestController;
 
 @RunWith(SpringRunner.class)
 @ActiveProfiles("ProxyDaoOriginTest")
