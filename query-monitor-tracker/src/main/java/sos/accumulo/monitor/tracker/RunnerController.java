@@ -1,7 +1,6 @@
 package sos.accumulo.monitor.tracker;
 
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -14,13 +13,14 @@ import javax.annotation.PreDestroy;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import sos.accumulo.monitor.data.AccumuloScanInfo;
@@ -36,7 +36,7 @@ public class RunnerController {
     @Autowired
     private RunnerTracker tracker;
     
-    @Value("${tracker.host:}")
+    @Value("${server.address:}")
     private String trackerHost;
 
     @Value("${runner.name:}")
@@ -45,9 +45,6 @@ public class RunnerController {
     @Autowired
     private AnnounceDao announceDao;
 
-    @LocalServerPort
-    private int port;
-    
     private volatile ScheduledExecutorService announceThread = null;
 
     @PostConstruct
@@ -55,32 +52,20 @@ public class RunnerController {
         if (!System.getProperty("spring.profiles.active", "").equals("TrackerModeRunner")) {
             return;
         }
-        String trackerAddress = getTrackerAddress(trackerHost, port);
+
+        if (runnerName.isEmpty()) {
+            throw new RuntimeException("runner.name must be set for runner tracker.");
+        }
 
         announceThread = Executors.newSingleThreadScheduledExecutor(new ThreadFactory(){
             @Override
             public Thread newThread(Runnable r) {
                 Thread thread = new Thread(r);
                 thread.setDaemon(true);
-                thread.setName("Query Monitor Tracker Announcement Thread - To: " + announceDao.getAnnounceAddress());
                 return thread;
             }
         });
-        announceThread.scheduleWithFixedDelay(new AnnouncementThread(announceDao, runnerName, trackerAddress), 0, 5, TimeUnit.MINUTES);
-    }
-
-    protected static String getTrackerAddress(String trackerHost, int port) {
-        String trackerAddress;
-        if (trackerHost != null && !trackerHost.isEmpty()) {
-            trackerAddress = trackerHost + ":" + port;
-        } else {
-            try {
-                trackerAddress = Inet4Address.getLocalHost().getHostAddress() + ":" + port;
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
-            }
-        }
-        return trackerAddress;
+        announceThread.scheduleWithFixedDelay(announceDao::announceRunner, 0, 5, TimeUnit.MINUTES);
     }
 
     @PreDestroy
@@ -106,11 +91,13 @@ public class RunnerController {
     }
 
     @PostMapping("/proxy/finished")
+    @ResponseStatus(value = HttpStatus.OK)
     public void proxyFinished(@RequestBody QueryInfoDetail detail) {
         tracker.proxyFinished(detail);
     }
 
     @PostMapping("/proxy/error")
+    @ResponseStatus(value = HttpStatus.OK)
     public void proxyError(@RequestParam String error) {
         tracker.recordError(error);
     }
@@ -137,6 +124,10 @@ public class RunnerController {
         @RequestParam String queryString, 
         @RequestParam String shard, 
         @RequestParam long started) {
-        return tracker.findMatch(queryString, shard, started);
+        QueryRunnerMatch match = tracker.findMatch(queryString, shard, started);
+        if (match.isFound()) {
+            match.setName(runnerName);
+        }
+        return match;
     }
 }

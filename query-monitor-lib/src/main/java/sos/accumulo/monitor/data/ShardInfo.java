@@ -1,5 +1,6 @@
 package sos.accumulo.monitor.data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -7,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class ShardInfo {
     private static final int BASE_SIZE_ESTIMATE = 8 * 4;
     private String shard;
-    private List<AttemptInfo> failedAttempts;
+    private List<AttemptInfo> failedAttempts = new ArrayList<>(0);
     private AttemptInfo latestAttempt;
 
     public String getShard() {

@@ -24,33 +24,27 @@ public class TrackerServer
         return context.getBean(RunnerTracker.class);
     }
 
-    public static synchronized TrackerHandle startProxy(String originProxyAddress, String proxyId) {
+    public static synchronized TrackerHandle startRunnerProxy(String originProxyAddress, String proxyId) {
         if (context != null) {
-            if (TrackerServer.mode != TrackerMode.Proxy) {
-                throw new IllegalArgumentException("Tracker server is already running in Proxy mode");
-            }
+            assertMode(TrackerMode.Proxy);
             return new TrackerHandle(getTrackerAddress());
         }
         System.setProperty("origin.proxy.address", originProxyAddress);
         System.setProperty("proxy.id", proxyId);
         System.setProperty("server.address", "" + Inet4Address.getLoopbackAddress().getHostAddress());
-		return startServer(TrackerMode.Proxy);
+		return startServer(0, TrackerMode.Proxy);
     }
 
-    public static synchronized TrackerHandle startExecutorServer() {
+    public static synchronized TrackerHandle startExecutorTracker(int port) {
         if (context != null) {
-            if (TrackerServer.mode != TrackerMode.Executor) {
-                throw new IllegalArgumentException("Tracker server is already running in " + mode + " mode");
-            }
+            assertMode(TrackerMode.Executor);
             return new TrackerHandle(getTrackerAddress());
         }
-        return startServer(TrackerMode.Executor);
+        return startServer(port, TrackerMode.Executor);
     }
-    public static synchronized TrackerHandle startQueryRunnerServer(String announceAddress, String name) {
+    public static synchronized TrackerHandle startRunnerTracker(String announceAddress, String name) {
         if (context != null) {
-            if (TrackerServer.mode != TrackerMode.Runner) {
-                throw new IllegalArgumentException("Tracker server is already running in " + mode + " mode");
-            }
+            assertMode(TrackerMode.Runner);
             return new TrackerHandle(getTrackerAddress());
         }
         
@@ -72,28 +66,35 @@ public class TrackerServer
             System.setProperty("runner.name", name);
         }
 
-        return startServer(TrackerMode.Runner);
+        return startServer(0, TrackerMode.Runner);
+    }
+
+    private static void assertMode(TrackerMode expected) {
+        if (mode != expected) {
+            throw new IllegalArgumentException("Tracker server is already running in mode: " + mode);
+        }
     }
 
     private static String getTrackerAddress() {
-        String trackerHost = context.getEnvironment().getProperty("tracker.host");
-        int trackerPort = context.getEnvironment().getProperty("local.server.port", Integer.class);
-        return RunnerController.getTrackerAddress(trackerHost, trackerPort);
+        return context.getBean(TrackerAddress.class).get();
     }
     
-    protected static synchronized TrackerHandle startServer(TrackerMode mode) {
+    protected static synchronized TrackerHandle startServer(int port, TrackerMode mode) {
         if (activeCount != 0) {
             log.warn("Tracker server active count is non-zero, however no context exists.");
         }
         log.info("Creating tracker server with mode: " + mode);
         System.setProperty("spring.profiles.active", "TrackerMode" + mode);
-        System.setProperty("server.port", "0");
+        System.setProperty("server.port", "" + port);
         context = SpringApplication.run(TrackerServer.class);
         activeCount = 0;
         TrackerServer.mode = mode;
 		return new TrackerHandle(getTrackerAddress());
     }
 
+    protected static synchronized int getActiveCount() {
+        return activeCount;
+    }
     protected static synchronized void newTrackerHandle() {
         activeCount++;
     }

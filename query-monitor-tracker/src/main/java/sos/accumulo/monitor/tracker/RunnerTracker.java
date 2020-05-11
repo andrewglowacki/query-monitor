@@ -33,8 +33,8 @@ import sos.accumulo.monitor.data.ShardInfo;
 @Component
 public class RunnerTracker {
     private static final Logger log = LoggerFactory.getLogger(RunnerTracker.class);
-    private static final long MAX_FINISHED_SIZE = 1024 * 1024 * 100;
-    private static final int MAX_ERRORS = 10;
+    protected static final long MAX_FINISHED_SIZE = 1024 * 1024 * 100;
+    protected static final int MAX_ERRORS = 10;
     private final AtomicLong queryCounter = new AtomicLong();
     private final AtomicLong finishedCount = new AtomicLong();
     private final Map<Long, QueryInfoDetail> running = new ConcurrentHashMap<>();
@@ -44,8 +44,9 @@ public class RunnerTracker {
     private final AtomicLong finishedSize = new AtomicLong();
     private final Map<Long, RegisteredProxy> proxiedRunning = new ConcurrentHashMap<>();
 
+    // initialize for testing purposes
     @Autowired
-    private ProxyDao proxyDao;
+    private ProxyDao proxyDao = new ProxyDaoOrigin();
 
     public ProxyQuery startProxyQuery(QueryInfo.Builder builder) {
         try {
@@ -82,7 +83,10 @@ public class RunnerTracker {
     }
 
     public void start(QueryInfoDetail detail) {
-        running.put(detail.getInfo().getIndex(), detail);
+        long index = detail.getInfo().getIndex();
+        if (index >= 0) {
+            running.put(detail.getInfo().getIndex(), detail);
+        }
     }
 
     public long registerProxy(String address, String proxyId) {
@@ -109,9 +113,19 @@ public class RunnerTracker {
                 .setQueryString("unknown")
                 .setResultSize(0)
                 .setResults(0)
+                .setShardsComplete(0)
+                .setShardsTotal(0)
                 .setStarted(proxy.getStarted())
                 .build(), new ArrayList<>(0)))
-            .forEach(this::finish);
+            .forEach(this::proxyFinished);
+    }
+
+    /** For testing purposes only */
+    protected void setProxyDao(ProxyDao proxyDao) {
+        this.proxyDao = proxyDao;
+    }
+    protected Map<Long, RegisteredProxy> getProxiedRunning() {
+        return proxiedRunning;
     }
 
     public List<AccumuloScanInfo> getProxyScans() {
@@ -223,14 +237,17 @@ public class RunnerTracker {
         long size = finishedSize.addAndGet(detail.getSizeEstimate());
         finished.put(index, detail);
         finishedOrdered.add(detail);
+        finishedCount.incrementAndGet();
 
         if (size > MAX_FINISHED_SIZE) {
             synchronized (this) {
+                long sizeOrig = size = finishedSize.get();
                 while (size > MAX_FINISHED_SIZE && finishedOrdered.size() > 0) {
                     QueryInfoDetail oldest = finishedOrdered.pollFirst();
                     finished.remove(oldest.getInfo().getIndex());
                     size -= oldest.getSizeEstimate();
                 }
+                finishedSize.addAndGet(size - sizeOrig);
             }
         }
     }

@@ -7,7 +7,7 @@ public class QueryRunnerStatus {
     private int running;
     private long finished;
     private Set<ErrorInfo> recentErrors;
-    private long lastHeard;
+    private long lastHeard = System.currentTimeMillis();
     
     public long getLastHeard() {
         return lastHeard;

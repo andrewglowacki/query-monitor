@@ -18,7 +18,11 @@ public class ProxyQuery implements AutoCloseable {
     public ProxyQuery(RunnerTracker tracker, long queryIndex, QueryInfo.Builder builder) {
         this.tracker = tracker;
         this.queryIndex = queryIndex;
-        this.detail = new QueryInfoDetail(builder.setIndex(queryIndex).build(), new CopyOnWriteArrayList<>());
+        if (queryIndex < 0) {
+            this.detail = new QueryInfoDetail(builder.setIndex(tracker.nextQueryIndex()).build(), new CopyOnWriteArrayList<>());
+        } else {
+            this.detail = new QueryInfoDetail(builder.setIndex(queryIndex).build(), new CopyOnWriteArrayList<>());
+        }
         tracker.start(detail);
     }
 
@@ -32,9 +36,9 @@ public class ProxyQuery implements AutoCloseable {
 
     @Override
     public void close() {
-        if (queryIndex >= 0) {
-            if (closed.getAndSet(true)) {
-                tracker.finish(detail);
+        if (!closed.getAndSet(true)) {
+            tracker.finish(detail);
+            if (queryIndex >= 0) {
                 tracker.finishProxyQuery(this);
             }
         }

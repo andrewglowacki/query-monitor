@@ -29,7 +29,7 @@ public class QueryInfo implements Comparable<QueryInfo> {
         protected ResultsType resultsType;
         protected String queryString;
         protected int numBlobIds;
-        protected int shardsTotal;
+        protected int shardsTotal = -1;
         protected int shardsComplete;
         protected String originThreadName = Thread.currentThread().getName();
         protected long finished;
@@ -109,7 +109,7 @@ public class QueryInfo implements Comparable<QueryInfo> {
             if (queryString == null && numBlobIds <= 0) {
                 throw new IllegalStateException("neither queryString nor numBlobIds are set.");
             }
-            if (shardsTotal <= 0) {
+            if (shardsTotal < 0) {
                 throw new IllegalStateException("shardsTotal is not set");
             }
             return new QueryInfo(this);

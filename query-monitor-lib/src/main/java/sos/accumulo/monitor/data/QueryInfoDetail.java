@@ -5,14 +5,15 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator.Mode;
 
 public class QueryInfoDetail implements Comparable<QueryInfoDetail> {
     private static final int BASE_SIZE_ESTIMATE = 12;
     private final QueryInfo info;
     private final List<ShardInfo> shards;
 
-    @JsonCreator
-    public QueryInfoDetail(@JsonProperty QueryInfo info, @JsonProperty List<ShardInfo> shards) {
+    @JsonCreator(mode = Mode.PROPERTIES)
+    public QueryInfoDetail(@JsonProperty("info") QueryInfo info, @JsonProperty("shards") List<ShardInfo> shards) {
         this.info = info;
         this.shards = shards;
     }

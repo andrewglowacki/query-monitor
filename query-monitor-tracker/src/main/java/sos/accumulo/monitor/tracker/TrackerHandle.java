@@ -1,7 +1,6 @@
 package sos.accumulo.monitor.tracker;
 
 import java.io.Closeable;
-import java.io.IOException;
 
 public class TrackerHandle implements Closeable {
 
@@ -18,7 +17,7 @@ public class TrackerHandle implements Closeable {
     }
 
     @Override
-    public synchronized void close() throws IOException {
+    public synchronized void close() {
         if (closed) {
             return;
         }

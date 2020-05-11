@@ -13,11 +13,13 @@ import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicHeader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Description;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import sos.accumulo.monitor.data.AccumuloScanInfo;
@@ -39,6 +41,7 @@ public class QueryRunnerController {
 
     @Description("Registers a query runner with the monitor. This will overwrite other query runners with the same name.")
     @PostMapping(value = "/register")
+    @ResponseStatus(value = HttpStatus.OK)
     public void registerQueryRunner(@RequestParam String name,  @RequestParam String address) {
         statusDao.register(name, address);
     }

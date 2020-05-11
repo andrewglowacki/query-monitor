@@ -1,7 +1,6 @@
 package sos.accumulo.monitor.tracker;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -10,8 +9,8 @@ import org.apache.http.NameValuePair;
 import org.apache.http.message.BasicHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
@@ -30,18 +29,16 @@ public class ProxyDaoTarget implements ProxyDao {
     @Value("${origin.proxy.address}")
     private String originProxyServer;
 
-    @LocalServerPort
-    private int localPort;
-
     @Value("${proxy.id}")
     private String proxyId;
 
-    private String localHostAddress = InetAddress.getLoopbackAddress().getHostAddress();
+    @Autowired
+    private TrackerAddress address;
 
     @Override
     public long startProxyQuery() throws IOException {
         List<NameValuePair> params = new ArrayList<>();
-        params.add(new BasicHeader("address", localHostAddress + ":" + localPort));
+        params.add(new BasicHeader("address", address.get()));
         params.add(new BasicHeader("id", proxyId));
         return HttpQuery.normalPostQuery("http://" + originProxyServer + "/proxy/start", params, Long.class);
     }
