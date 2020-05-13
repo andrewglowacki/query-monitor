@@ -33,6 +33,9 @@ public class ExecutorFileMonitor implements Runnable {
     public Set<String> getExecutors() {
         return executors;
     }
+    public long getLastLoaded() {
+        return lastLoaded;
+    }
 
     protected void updateExecutors() throws IOException {
         long lastModified = executorFile.lastModified();

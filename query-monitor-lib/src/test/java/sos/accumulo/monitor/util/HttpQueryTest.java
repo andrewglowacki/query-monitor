@@ -46,7 +46,7 @@ public class HttpQueryTest {
 
     @Before
     public void reset() {
-        controller.getInvocations().clear();
+        controller.reset();
     }
 
     @Test

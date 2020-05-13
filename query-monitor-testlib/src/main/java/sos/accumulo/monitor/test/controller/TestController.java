@@ -1,5 +1,7 @@
 package sos.accumulo.monitor.test.controller;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -8,6 +10,9 @@ import java.net.BindException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -24,10 +29,10 @@ public class TestController extends HttpServlet implements Closeable {
     private static final long serialVersionUID = 1L;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    private final Map<String, Object> returnObjects = new ConcurrentHashMap<>();
     private final List<Invocation> invocations = Collections.synchronizedList(new ArrayList<>());
     private final Tomcat tomcat;
-
-    private volatile Object nextReturnObject = null;
+    private volatile Object defaultNextReturnObject = null;
 
     public TestController(int port) {
         File workDir = new File("target/tomcat-test-controller");
@@ -61,20 +66,42 @@ public class TestController extends HttpServlet implements Closeable {
 
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        invocations.add(new Invocation(request));
-        if (nextReturnObject != null) {
-            Object ret = nextReturnObject;
-            nextReturnObject = null;
+        Invocation invocation = new Invocation(request);
+        invocations.add(invocation);
+        Object retObj = returnObjects.get(invocation.getPath());
+        if (retObj == null) {
+            retObj = defaultNextReturnObject;
+        }
+        if (retObj != null) {
             response.setContentType("application/json");
             try (OutputStream outStream = response.getOutputStream()) {
-                MAPPER.writeValue(outStream, ret);
+                MAPPER.writeValue(outStream, retObj);
             }
         }
         response.setStatus(200);
     }
 
+    public void reset() {
+        this.returnObjects.clear();
+        this.defaultNextReturnObject = null;
+        this.invocations.clear();
+    }
     public void setNextReturnObject(Object nextReturnObject) {
-        this.nextReturnObject = nextReturnObject;
+        this.defaultNextReturnObject = nextReturnObject;
+        this.returnObjects.clear();
+    }
+    public void setNextReturnObject(String path, Object nextReturnObject) {
+        this.defaultNextReturnObject = null;
+        this.returnObjects.put(path, nextReturnObject);
+    }
+    public TestController assertInvocations(int expectedCount) {
+        assertEquals(expectedCount, invocations.size());
+        return this;
+    }
+    public List<Invocation> getInvocationsByPath(String path) {
+        return invocations.stream()
+            .filter(invocation -> invocation.getPath().equals(path))
+            .collect(Collectors.toList());
     }
 
     public List<Invocation> getInvocations() {

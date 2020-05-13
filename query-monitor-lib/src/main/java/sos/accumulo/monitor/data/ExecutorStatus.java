@@ -10,7 +10,7 @@ public class ExecutorStatus {
     public ExecutorStatus() { }
 
     public ExecutorStatus(ExecutorStatusDetail copy) {
-        this.recentErrorCount = copy.getRecentErrors().size(); 
+        this.recentErrorCount = copy.getRecentErrors() != null ? copy.getRecentErrors().size() : copy.getRecentErrorCount();
         this.health = copy.getHealth();
         this.running = copy.getRunning();
         this.finished = copy.getFinished();

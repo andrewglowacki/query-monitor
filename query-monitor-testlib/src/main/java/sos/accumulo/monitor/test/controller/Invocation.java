@@ -1,6 +1,7 @@
 package sos.accumulo.monitor.test.controller;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -54,20 +55,33 @@ public class Invocation {
         this.params = params;
     }
     
+
+	public String getPath() {
+		return path;
+	}
     public String getBody() {
         return body;
     }
-    public void assertMethodEquals(RequestMethod expected) {
+    
+    public Invocation assertNoBody() {
+        assertNull(body);
+        return this;
+    }
+    public Invocation assertMethodEquals(RequestMethod expected) {
         assertEquals(expected, method);
+        return this;
     }
-    public void assertPathEquals(String expectedPath) {
+    public Invocation assertPathEquals(String expectedPath) {
         assertEquals(expectedPath, path);
+        return this;
     }
-    public void assertNumParams(int expected) {
+    public Invocation assertNumParams(int expected) {
         assertEquals(expected, params.size());
+        return this;
     }
-    public void assertParamEquals(String param, String expected) {
+    public Invocation assertParamEquals(String param, String expected) {
         String actual = params.get(param);
         assertEquals(expected, actual);
+        return this;
     }
 }

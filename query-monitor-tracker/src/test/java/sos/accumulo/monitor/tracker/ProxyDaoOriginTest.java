@@ -68,7 +68,7 @@ public class ProxyDaoOriginTest {
 
     @Before
     public void reset() {
-        controller.getInvocations().clear();
+        controller.reset();
     }
 
     @Test

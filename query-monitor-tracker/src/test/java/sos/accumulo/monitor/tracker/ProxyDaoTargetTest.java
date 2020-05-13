@@ -78,7 +78,7 @@ public class ProxyDaoTargetTest {
 
     @Before
     public void reset() {
-        controller.getInvocations().clear();
+        controller.reset();
     }
 
     @Test
