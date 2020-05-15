@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>sos.accumulo.monitor</groupId>
+        <artifactId>query-monitor-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>query-monitor-integration-tests</artifactId>
+
+    <name>query-monitor-integration-tests</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>sos.accumulo.monitor</groupId>
+            <artifactId>query-monitor-ui</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>sos.accumulo.monitor</groupId>
+            <artifactId>query-monitor-test-daemon</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+</project>

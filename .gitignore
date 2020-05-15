@@ -5,6 +5,7 @@ node_modules/
 !**/src/main/**
 !**/src/test/**
 query-monitor-ui/src/main/resources/static
+dependency-reduced-pom.xml
 
 ### STS ###
 .apt_generated

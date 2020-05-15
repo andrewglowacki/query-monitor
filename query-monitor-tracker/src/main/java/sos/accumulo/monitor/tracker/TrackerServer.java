@@ -13,7 +13,7 @@ public class TrackerServer
 {
     private static final Logger log = LoggerFactory.getLogger(TrackerServer.class);
     private static int activeCount = 0;
-    private static ConfigurableApplicationContext context;
+    private static volatile ConfigurableApplicationContext context;
     private static TrackerMode mode;
 
     public static ExecutorTracker getExecutorTracker() {
@@ -22,6 +22,10 @@ public class TrackerServer
 
     public static RunnerTracker getRunnerTracker() {
         return context.getBean(RunnerTracker.class);
+    }
+
+    public static ConfigurableApplicationContext getContext() {
+        return context;
     }
 
     public static synchronized TrackerHandle startRunnerProxy(String originProxyAddress, String proxyId) {

@@ -70,6 +70,10 @@ public class StatusUpdater implements Runnable {
         }
     }
 
+    public void clearLastAttempts() {
+        lastAttempts.clear();
+    }
+
     protected boolean shouldUpdate(String name) {
         long now = System.currentTimeMillis();
         long threshold = now - THRESHOLD;

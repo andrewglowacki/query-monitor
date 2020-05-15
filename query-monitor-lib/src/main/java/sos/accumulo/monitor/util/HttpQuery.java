@@ -29,8 +29,8 @@ public class HttpQuery {
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .copy();
     private static final RequestConfig normalConfig = RequestConfig.custom()
-        .setConnectTimeout(30000)
-        .setSocketTimeout(15000)
+        .setConnectTimeout(300000)
+        .setSocketTimeout(150000)
         .build();
     private static final RequestConfig quickRequestConfig = RequestConfig.custom()
         .setConnectTimeout(2000)

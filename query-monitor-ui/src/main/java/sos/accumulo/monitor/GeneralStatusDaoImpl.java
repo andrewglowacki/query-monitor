@@ -68,6 +68,12 @@ public class GeneralStatusDaoImpl implements GeneralStatusDao {
     }
 
     @Override
+    public void updateAllNow() {
+        statusUpdater.clearLastAttempts();
+        statusUpdater.run();
+    }
+
+    @Override
     public void updateNow(String name, ExecutorStatusDetail status) {
         statusUpdater.updateNow(name, status);
     }

@@ -14,6 +14,8 @@ public interface GeneralStatusDao {
 
 	public void updateNow(String name, QueryRunnerStatus status);
 
+	public void updateAllNow();
+
 	public void register(String name, String address);
 
 	public String getAddress(String name);

@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Description;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import sos.accumulo.monitor.data.GeneralStatus;
@@ -18,7 +19,10 @@ public class MonitorController {
 
     @Description("Gets the available executors and query runners and their statuses")
     @GetMapping("/status")
-    public GeneralStatus getGeneralStatus() {
+    public GeneralStatus getGeneralStatus(@RequestParam(required = false, defaultValue = "false") boolean refreshNow) {
+        if (refreshNow) {
+            statusDao.updateAllNow();
+        }
         return statusDao.getGeneralStatus();
     }
 
