@@ -531,7 +531,11 @@ export default {
                 return;
             }
             let token = ctrl.cancelTokens.detail = axios.CancelToken.source();
-            axios.post(url, params, {
+            let form = new URLSearchParams();
+            for (let key in params) {
+                form.append(key, '' + params[key]);
+            }
+            axios.post(url, form, {
                 cancelToken: token.token
             }).then((response) => {
                 ctrl.loading.detail = false;
@@ -869,12 +873,12 @@ export default {
             }
 
             let token = ctrl.cancelTokens.shards = axios.CancelToken.source();
-            let url = 'api/runner/' + encodeURIComponent(ctrl.selected.name) + '/' + ctrl.selected.query;
+            let url = 'api/runner/' + encodeURIComponent(ctrl.selected.name) + '/query/' + ctrl.selected.query;
             ctrl.loadingPromises.shards = axios.get(url, {
                 cancelToken: token.token
             }).then((response) => {
                 ctrl.loading.shards = false;
-                ctrl.formatShards(response.data);
+                ctrl.formatShards(response.data.shards);
             }).catch((response) => {
                 if (!axios.isCancel(response)) {
                     ctrl.loading.shards = false;

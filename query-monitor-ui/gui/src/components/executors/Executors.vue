@@ -444,7 +444,11 @@ export default {
             }
 
             let token = axios.CancelToken.source();
-            axios.post('api/runner/find', params, {
+            let form = new URLSearchParams();
+            for (let key in params) {
+                form.append(key, '' + params[key]);
+            }
+            axios.post('api/runner/find', form, {
                 cancelToken: token.token
             }).then((response) => {
                 ctrl.loading.runner = false;
@@ -796,7 +800,7 @@ export default {
                 ctrl.cancelTokens.parts.cancel();
             }
 
-            let url = 'api/executor/' + encodeURIComponent(ctrl.selected.name) + "/" + ctrl.selected.shard;
+            let url = 'api/executor/' + encodeURIComponent(ctrl.selected.name) + "/shard/" + ctrl.selected.shard;
 
             ctrl.loading.parts = true;
             if (ctrl.options.test) {

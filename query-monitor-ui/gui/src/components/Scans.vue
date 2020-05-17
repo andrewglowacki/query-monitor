@@ -169,6 +169,9 @@ export default {
                     if (ctrl.loading < 0) {
                         ctrl.loading = 0;
                     }
+                    for (let i = 0; i < response.data.length; i++) {
+                        response.data[i].target = name;
+                    }
                     ctrl.scanGrid.rows = ctrl.scanGrid.rows.concat(response.data);
                 }).catch((response) => {
                     if (!axios.isCancel(response)) {
